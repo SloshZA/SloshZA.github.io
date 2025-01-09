@@ -1625,3 +1625,37 @@ select:not(#locationType):not(#location):not(#moon) {
   }
 }
 
+/* Add styles for the pop-out button */
+.popout-btn {
+    background-color: #007BFF; /* Blue background */
+    color: white; /* White text */
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.popout-btn:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Styles for the pop-out form container */
+#popoutContainer {
+    position: fixed; /* Fixed position to stay above other applications */
+    top: 20px; /* Adjust as needed */
+    right: 20px; /* Adjust as needed */
+    width: 400px; /* Set width for the pop-out form */
+    background-color: var(--table-bg); /* Use existing background color */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000; /* Ensure it stays above other elements */
+    display: none; /* Initially hidden */
+}
+
+/* Class to show the pop-out container */
+.hidden {
+    display: none;
+}
+

@@ -126,6 +126,7 @@ const data = {
     'Processed Food',
     'Pressurized ice',
     'Quartz',
+    'Silicon',
     'Stims',
     'Tin',
     'Titanium',
@@ -1753,6 +1754,24 @@ aUECInput.addEventListener('input', updateTotalValue);
 
 // Call updateTotalValue initially to set the correct total
 updateTotalValue();
+
+// Add this function to handle the pop-out button click
+document.getElementById('popoutBtn').addEventListener('click', function() {
+    const popoutContainer = document.getElementById('popoutContainer');
+    if (popoutContainer.style.display === 'none' || popoutContainer.style.display === '') {
+        popoutContainer.style.display = 'block'; // Show the pop-out form
+    } else {
+        popoutContainer.style.display = 'none'; // Hide the pop-out form
+    }
+});
+
+// Optional: Close the pop-out form when clicking outside of it
+window.addEventListener('click', function(event) {
+    const popoutContainer = document.getElementById('popoutContainer');
+    if (event.target === popoutContainer) {
+        popoutContainer.style.display = 'none'; // Hide if clicked outside
+    }
+});
 
 
 
