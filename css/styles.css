@@ -233,13 +233,13 @@ select:focus, input[type="number"]:focus {
 #resultTable {
   height: fit-content;
   overflow: visible;
-  margin-top: 5px;
+  margin-top: 2px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 10px;
   border: none;
   border-radius: 12px;
   overflow: hidden;
@@ -248,10 +248,14 @@ table {
 
 th,
 td {
-  padding: 8px; /* Increased padding for better cell spacing */
+  padding: 4px; /* Reduced padding for better cell spacing */
   text-align: left;
   border: 1px solid rgba(221, 221, 221, 0.1);
   font-size: 14px;
+}
+
+td {
+  padding: 1px; /* Set padding for drop-off point table to 1px */
 }
 
 th {
@@ -261,6 +265,7 @@ th {
   border: none;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  line-height: 1.2; /* Adjust line-height for smaller vertical size */
 }
 
 tr:nth-child(even) {

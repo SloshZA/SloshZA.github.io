@@ -134,6 +134,9 @@ const data = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Scroll to the top of the page on load
+    window.scrollTo(0, 0); // Scroll to the top
+
   // Load history table on page load
   updateHistoryTable();
 
@@ -160,6 +163,13 @@ document.addEventListener('DOMContentLoaded', () => {
     amountInput.select();
   });
 
+  // Add event listener for commodity selection
+  const commoditySelect = document.getElementById('commodity');
+  commoditySelect.addEventListener('change', () => {
+    // Focus on the amount input when a commodity is selected
+    amountInput.focus();
+  });
+
   populateMoons();
 
   const colorPicker = document.getElementById('accentColor');
@@ -178,6 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
   colorPicker.addEventListener('change', (e) => {
     updatePrimaryColor(e.target.value);
   });
+
+    initializeEventListeners();
 });
 
 
@@ -197,6 +209,23 @@ function updateHistoryTable() {
         historyContainer.appendChild(placeholder);
         return;
     }
+
+    // Create a table for the history
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+
+    // Table header row
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `
+        <th>Date</th>
+        <th>Drop-off Point</th>
+        <th>Commodity</th>
+        <th>Amount Delivered</th>
+        <th>%</th>
+        <th>Status</th>
+    `;
+    table.appendChild(headerRow);
 
     // Group entries by date and then by trip ID
     const groupedByDate = {};
@@ -267,16 +296,16 @@ function updateHistoryTable() {
             missionContentDiv.style.display = 'none'; // Initially hidden
 
             // Create commodities table
-            const table = document.createElement('table');
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
+            const commoditiesTable = document.createElement('table');
+            commoditiesTable.style.width = '100%';
+            commoditiesTable.style.borderCollapse = 'collapse';
 
             // Display all drop-off points for this trip's commodities
             Object.keys(groupedByDate[date][tripId]).forEach(commodity => {
                 // Create a collapsible header for the commodity
                 const commodityHeader = document.createElement('tr');
                 const commodityCell = document.createElement('td');
-                commodityCell.colSpan = 2; // Span across both columns
+                commodityCell.colSpan = 5; // Span across both columns
                 commodityCell.style.fontWeight = 'bold';
                 commodityCell.style.cursor = 'pointer';
                 commodityCell.textContent = `Commodity: ${commodity}`; // Display commodity name
@@ -285,14 +314,14 @@ function updateHistoryTable() {
                     commodityContent.style.display = commodityContent.style.display === 'none' ? 'table-row' : 'none';
                 };
                 commodityHeader.appendChild(commodityCell);
-                table.appendChild(commodityHeader);
+                commoditiesTable.appendChild(commodityHeader);
 
                 // Create a row for the drop-off points
                 const dropOffContentRow = document.createElement('tr');
                 dropOffContentRow.style.display = 'none'; // Initially hidden
 
                 const dropOffContentCell = document.createElement('td');
-                dropOffContentCell.colSpan = 2; // Span across both columns
+                dropOffContentCell.colSpan = 5; // Span across both columns
                 const dropOffTable = document.createElement('table');
                 dropOffTable.style.width = '100%';
                 dropOffTable.style.borderCollapse = 'collapse';
@@ -301,25 +330,90 @@ function updateHistoryTable() {
                 dropOffHeaderRow.innerHTML = `
                     <th style="border: 1px solid #ddd; padding: 8px;">Drop-off Point</th>
                     <th style="border: 1px solid #ddd; padding: 8px;">Amount Delivered</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">%</th>
                 `;
                 dropOffTable.appendChild(dropOffHeaderRow);
 
                 // Display all drop-off points for this commodity
                 groupedByDate[date][tripId][commodity].forEach(({ dropOffPoint, currentAmount, originalAmount }) => {
                     const row = document.createElement('tr');
+                    const percentage = ((currentAmount / originalAmount) * 100).toFixed(2); // Calculate percentage
                     row.innerHTML = `
                         <td style="border: 1px solid #ddd; padding: 8px;">${dropOffPoint}</td>
                         <td style="border: 1px solid #ddd; padding: 8px;">${currentAmount}/${originalAmount}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; ${percentage < 55 ? 'background-color: red; color: white;' : ''}">${percentage}%</td>
                     `;
                     dropOffTable.appendChild(row);
                 });
 
+                // Add the aUEC input box next to the commodity name
+                const aUECInput = document.createElement('input');
+                aUECInput.type = 'text';
+                aUECInput.placeholder = 'Value';
+                aUECInput.style.marginLeft = '5px'; // Reduced spacing
+                aUECInput.style.width = '48px'; // Set a further reduced width (80% of 60px)
+                aUECInput.style.border = 'none'; // Remove the border
+                aUECInput.style.borderRadius = '4px';
+                aUECInput.style.padding = '2px'; // Reset padding to original value
+                aUECInput.style.height = '24px'; // Set a specific height for the input
+                aUECInput.style.fontSize = '15px'; // Increased font size by 3 pixels (from 12px to 15px)
+
+                // Add a pattern to allow only numbers
+                aUECInput.setAttribute('pattern', '[0-9]*'); // Allow only numeric input
+
+                // Remove the up and down arrows (spinners)
+                aUECInput.style.webkitAppearance = 'none'; // For Safari
+                aUECInput.style.mozAppearance = 'textfield'; // For Firefox
+                aUECInput.style.appearance = 'none'; // For other browsers
+
+                // Create a label for aUEC
+                const aUECLabel = document.createElement('span');
+                aUECLabel.textContent = ' aUEC'; // Label text
+                aUECLabel.style.marginLeft = '2px'; // Reduced spacing between input and label
+                aUECLabel.style.fontSize = '15px'; // Match the font size of the input
+                aUECLabel.style.paddingRight = '10px'; // Add padding to the right side of the label
+
+                // Append the input boxes and labels to the commodity cell
+                commodityCell.appendChild(aUECInput);
+                commodityCell.appendChild(aUECLabel);
+
+                // Prevent the collapsible tab from collapsing when clicking the input box
+                aUECInput.addEventListener('click', function(event) {
+                    event.stopPropagation(); // Stop the click event from bubbling up
+                });
+
+                // Function to format number with commas
+                function formatNumberWithCommas(value) {
+                    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                }
+
+                // Add event listener to format input value and adjust width
+                aUECInput.addEventListener('input', function() {
+                    // Remove any existing commas for processing
+                    let value = this.value.replace(/,/g, '');
+                    // Format the number with commas
+                    this.value = formatNumberWithCommas(value);
+                    
+                    // Adjust the width based on the length of the input value
+                    const length = this.value.length;
+                    this.style.width = `${Math.max(48, length * 8)}px`; // Adjust width dynamically, reduced multiplier
+
+                    // Save the value to local storage using trip ID and commodity name as part of the key
+                    localStorage.setItem(`aUECValue_${tripId}_${commodity}`, this.value); // Use trip ID and commodity name as part of the key
+                });
+
+                // Retrieve the value from local storage when populating the input box
+                const savedValue = localStorage.getItem(`aUECValue_${tripId}_${commodity}`);
+                if (savedValue) {
+                    aUECInput.value = savedValue; // Set the input box value to the saved value
+                }
+
                 dropOffContentCell.appendChild(dropOffTable);
                 dropOffContentRow.appendChild(dropOffContentCell);
-                table.appendChild(dropOffContentRow);
+                commoditiesTable.appendChild(dropOffContentRow);
             });
 
-            missionContentDiv.appendChild(table);
+            missionContentDiv.appendChild(commoditiesTable);
             missionSection.appendChild(missionContentDiv);
             dateContent.appendChild(missionSection);
         });
@@ -327,6 +421,8 @@ function updateHistoryTable() {
         dateSection.appendChild(dateContent);
         historyContainer.appendChild(dateSection);
     });
+
+    initializeEventListeners();
 }
 
 
@@ -366,21 +462,61 @@ function populateLocations() {
   if (selectedType === 'station') {
     moonGroup.style.display = 'none';
     dropOffGroup.style.display = 'none';
-  } else {
-    moonGroup.style.display = 'flex';
-    dropOffGroup.style.display = 'flex';
-  }
-  
-  // Only populate with planets or stations
-  if (selectedType === 'planet') {
-    Object.keys(data.planet).forEach(location => {
+    
+    // Add original stations
+    const originalStations = [
+      { value: 'Port Olisar', text: 'Port Olisar' },
+      { value: 'Port Tressler', text: 'Port Tressler' },
+      { value: 'Grim HEX', text: 'Grim HEX' },
+      { value: 'Everus Harbor', text: 'Everus Harbor' }
+    ];
+
+    originalStations.forEach(station => {
       const option = document.createElement('option');
-      option.value = location;
-      option.textContent = location;
+      option.value = station.value;
+      option.textContent = station.text;
       locationSelect.appendChild(option);
     });
-  } else if (selectedType === 'station') {
-    Object.keys(data.station).forEach(location => {
+
+    // Add Lagrange stations
+    const lagrangeStations = [
+      { value: 'ARC-L1', text: 'ARC-L1 Wide Forest Station' },
+      { value: 'CRU-L1', text: 'CRU-L1 Ambitious Dream Station' },
+      { value: 'CRU-L4', text: 'CRU-L4 Shallow Fields Station' },
+      { value: 'CRU-L5', text: 'CRU-L5 Beautiful Glen Station' },
+      { value: 'HUR-L1', text: 'HUR-L1 Green Glade Station' },
+      { value: 'HUR-L2', text: 'HUR-L2 Faithful Dream Station' },
+      { value: 'HUR-L3', text: 'HUR-L3 Thundering Express Station' },
+      { value: 'HUR-L4', text: 'HUR-L4 Melodic Fields Station' },
+      { value: 'HUR-L5', text: 'HUR-L5 High Course Station' },
+      { value: 'MIC-L1', text: 'MIC-L1 Shallow Frontier Station' }
+    ];
+
+    let lastPrefix = '';
+
+    lagrangeStations.forEach(station => {
+      const prefix = station.value.substring(0, 3); // Get the first three letters
+
+      // Add separator if the prefix has changed
+      if (prefix !== lastPrefix) {
+        const separator = document.createElement('option');
+        separator.value = '';
+        separator.textContent = '------';
+        locationSelect.appendChild(separator);
+        lastPrefix = prefix; // Update the last prefix
+      }
+
+      const option = document.createElement('option');
+      option.value = station.value;
+      option.textContent = station.text;
+      locationSelect.appendChild(option);
+    });
+  } else if (selectedType === 'planet') {
+    moonGroup.style.display = 'flex'; // Show moon dropdown
+    dropOffGroup.style.display = 'flex'; // Show drop-off point dropdown
+
+    // Populate with planets
+    Object.keys(data.planet).forEach(location => {
       const option = document.createElement('option');
       option.value = location;
       option.textContent = location;
@@ -1233,15 +1369,24 @@ function addEntry() {
 
   cargoEntries.push(newEntry);
   localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
+  
+  // Clear the amount input box
   amountInput.value = '';
+  
+  // Clear the aUEC input box
+  const aUECInputs = document.querySelectorAll('input[type="text"]'); // Adjust selector if necessary
+  aUECInputs.forEach(input => {
+    input.value = ''; // Clear each aUEC input box
+  });
+
   updateResultTable();
 
   // Apply colors to new buttons after table update
-  const newButtons = document.querySelectorAll(`
-    button.action-btn,
+  const newButtons = document.querySelectorAll(
+    `button.action-btn,
     .delivered,
-    .action-btn.update-btn
-  `);
+    .action-btn.update-btn`
+  );
   applyCurrentColor(newButtons);
 }
 
@@ -1250,18 +1395,7 @@ function updateResultTable() {
   let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
 
   // Clear the table first but keep the title
-  resultTable.innerHTML = '';
-
-  // Create Cargo Manifest title (only once)
-  if (!document.getElementById('cargoManifestTitle')) {
-    const manifestTitle = document.createElement('div');
-    manifestTitle.classList.add('cargo-manifest-title');
-    manifestTitle.id = 'cargoManifestTitle';
-    manifestTitle.textContent = 'CARGO MANIFEST';
-    resultTable.appendChild(manifestTitle);
-  }
-
-  // Create table for cargo entries
+  const manifestTitle = document.getElementById('cargoManifestTitle');
   const table = document.createElement('table');
 
   // Table header row
@@ -1269,7 +1403,7 @@ function updateResultTable() {
   headerRow.innerHTML = `
     <th>Drop-off Point</th>
     <th>Commodity</th>
-    <th>Amount</th>
+    <th>Amount Delivered</th>
     <th>Actions</th>
     <th>Status</th>
   `;
@@ -1305,6 +1439,7 @@ function updateResultTable() {
     // Create container for commodity rows
     const commodityRows = document.createElement('tbody');
     commodityRows.classList.add('commodity-rows');
+    commodityRows.setAttribute('data-drop-off', dropOffPoint); // Set data attribute for identification
     
     // Add each commodity for the current drop-off point as individual rows
     entries.forEach(({ id, commodity, originalAmount, currentAmount, status }) => {
@@ -1324,7 +1459,6 @@ function updateResultTable() {
     });
 
     table.appendChild(commodityRows);
-
     // Add click event to toggle visibility
     dropOffRow.querySelector('td').addEventListener('click', () => {
       const isExpanded = commodityRows.style.display !== 'none';
@@ -1334,6 +1468,7 @@ function updateResultTable() {
   });
 
   // Append the table to the result section
+  resultTable.innerHTML = ''; // Clear existing table
   resultTable.appendChild(table);
 }
 
@@ -1374,9 +1509,6 @@ function markDelivered(dropOffPoint) {
   cargoEntries = cargoEntries.map(entry => {
     const normalizedEntry = entry.dropOffPoint.toLowerCase().trim();
 
-    // Log for debugging
-    console.log(`Comparing: "${normalizedEntry}" with "${normalizedTarget}"`);
-
     if (normalizedEntry === normalizedTarget) {
       updated = true;
       return {
@@ -1390,8 +1522,21 @@ function markDelivered(dropOffPoint) {
   // Save updated cargo entries back to local storage
   localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
 
-  // Refresh the result table to reflect the updated status
-  updateResultTable();
+  // Update only the relevant rows in the result table
+  const rowsToUpdate = document.querySelectorAll(`.commodity-rows[data-drop-off="${dropOffPoint}"]`);
+  rowsToUpdate.forEach(row => {
+    const statusCell = row.querySelector('td:last-child'); // Assuming status is in the last cell
+    statusCell.textContent = 'Delivered'; // Update the status cell
+  });
+
+  // Clear the corresponding aUEC input box for each commodity
+  const commodities = Object.keys(cargoEntries).filter(entry => entry.dropOffPoint === dropOffPoint);
+  commodities.forEach(commodity => {
+    const aUECInput = document.querySelector(`input[type="text"][data-commodity="${commodity}"]`); // Adjust selector if necessary
+    if (aUECInput) {
+      aUECInput.value = ''; // Clear the input box
+    }
+  });
 
   // Show notification of successful status change
   if (updated) {
@@ -1399,6 +1544,16 @@ function markDelivered(dropOffPoint) {
   } else {
     showNotification('No matching entries found to mark as delivered');
   }
+
+  // Collapse the specific cargo entry group
+  const cargoRows = document.querySelectorAll(`.commodity-rows[data-drop-off="${dropOffPoint}"]`);
+  cargoRows.forEach(row => {
+    const isExpanded = row.style.display !== 'none';
+    // Only collapse if it is currently expanded
+    if (isExpanded) {
+      row.style.display = 'none'; // Collapse the row
+    }
+  });
 }
 
 // Function to update the current amount for a cargo entry
@@ -1487,161 +1642,117 @@ document.getElementById('windowModeToggle').addEventListener('click', () => {
     document.body.classList.toggle('borderless');
 });
 
-// Function to update the history table
-function updateHistoryTable() {
-    const historyContainer = document.getElementById('historyContainer');
-    const deliveryHistory = JSON.parse(localStorage.getItem('deliveryHistory')) || [];
+// Function to initialize event listeners
+function initializeEventListeners() {
+    const tabs = document.querySelectorAll('.tab'); // Adjust the selector based on your HTML structure
 
-    // Clear the container
-    historyContainer.innerHTML = '';
-
-    if (deliveryHistory.length === 0) {
-        const placeholder = document.createElement('p');
-        placeholder.textContent = 'No delivery history available.';
-        placeholder.style.textAlign = 'center';
-        placeholder.style.color = '#555';
-        historyContainer.appendChild(placeholder);
-        return;
-    }
-
-    // Group entries by date and then by trip ID
-    const groupedByDate = {};
-    deliveryHistory.forEach(entry => {
-        const date = entry.date; // Ensure date is stored with each entry
-        if (!groupedByDate[date]) {
-            groupedByDate[date] = {};
-        }
-
-        // Group by trip ID
-        const tripId = entry.missionId; // Assuming missionId is the trip ID
-        if (!groupedByDate[date][tripId]) {
-            groupedByDate[date][tripId] = {};
-        }
-
-        Object.keys(entry.dropOffPoints).forEach(dropOffPoint => {
-            entry.dropOffPoints[dropOffPoint].commodities.forEach(commodity => {
-                if (!groupedByDate[date][tripId][commodity.commodity]) {
-                    groupedByDate[date][tripId][commodity.commodity] = [];
-                }
-                groupedByDate[date][tripId][commodity.commodity].push({
-                    dropOffPoint,
-                    currentAmount: commodity.currentAmount,
-                    originalAmount: commodity.originalAmount
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Scroll to the top of the page
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth' // Optional: adds a smooth scrolling effect
                 });
             });
         });
-    });
-
-    // Create sections for each date
-    Object.keys(groupedByDate).forEach(date => {
-        const dateSection = document.createElement('div');
-        dateSection.className = 'date-section';
-
-        // Date header
-        const dateHeader = document.createElement('h3');
-        dateHeader.textContent = date;
-        dateHeader.style.cursor = 'pointer';
-        dateHeader.onclick = () => {
-            const dateContent = dateSection.querySelector('.date-content');
-            dateContent.style.display = dateContent.style.display === 'none' ? 'block' : 'none';
-        };
-        dateSection.appendChild(dateHeader);
-
-        // Date content container
-        const dateContent = document.createElement('div');
-        dateContent.className = 'date-content';
-        dateContent.style.display = 'none'; // Initially hidden
-
-        // Add mission sections for this date
-        Object.keys(groupedByDate[date]).forEach(tripId => {
-            const missionSection = document.createElement('div');
-            missionSection.className = 'mission-section';
-
-            // Mission ID header
-            const missionHeader = document.createElement('h4');
-            missionHeader.textContent = `Trip: ${tripId}`;
-            missionHeader.style.cursor = 'pointer';
-            missionHeader.onclick = () => {
-                const missionContent = missionSection.querySelector('.mission-content');
-                missionContent.style.display = missionContent.style.display === 'none' ? 'block' : 'none';
-            };
-            missionSection.appendChild(missionHeader);
-
-            // Mission content
-            const missionContentDiv = document.createElement('div');
-            missionContentDiv.className = 'mission-content';
-            missionContentDiv.style.display = 'none'; // Initially hidden
-
-            // Create commodities table
-            const table = document.createElement('table');
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-
-            // Display all drop-off points for this trip's commodities
-            Object.keys(groupedByDate[date][tripId]).forEach(commodity => {
-                // Create a collapsible header for the commodity
-                const commodityHeader = document.createElement('tr');
-                const commodityCell = document.createElement('td');
-                commodityCell.colSpan = 2; // Span across both columns
-                commodityCell.style.fontWeight = 'bold';
-                commodityCell.style.cursor = 'pointer';
-                commodityCell.textContent = `Commodity: ${commodity}`; // Display commodity name
-                commodityCell.onclick = () => {
-                    const commodityContent = commodityHeader.nextElementSibling; // Get the next row (the content)
-                    commodityContent.style.display = commodityContent.style.display === 'none' ? 'table-row' : 'none';
-                };
-                commodityHeader.appendChild(commodityCell);
-                table.appendChild(commodityHeader);
-
-                // Create a row for the drop-off points
-                const dropOffContentRow = document.createElement('tr');
-                dropOffContentRow.style.display = 'none'; // Initially hidden
-
-                const dropOffContentCell = document.createElement('td');
-                dropOffContentCell.colSpan = 2; // Span across both columns
-                const dropOffTable = document.createElement('table');
-                dropOffTable.style.width = '100%';
-                dropOffTable.style.borderCollapse = 'collapse';
-
-                const dropOffHeaderRow = document.createElement('tr');
-                dropOffHeaderRow.innerHTML = `
-                    <th style="border: 1px solid #ddd; padding: 8px;">Drop-off Point</th>
-                    <th style="border: 1px solid #ddd; padding: 8px;">Amount Delivered</th>
-                `;
-                dropOffTable.appendChild(dropOffHeaderRow);
-
-                // Display all drop-off points for this commodity
-                groupedByDate[date][tripId][commodity].forEach(({ dropOffPoint, currentAmount, originalAmount }) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td style="border: 1px solid #ddd; padding: 8px;">${dropOffPoint}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${currentAmount}/${originalAmount}</td>
-                    `;
-                    dropOffTable.appendChild(row);
-                });
-
-                dropOffContentCell.appendChild(dropOffTable);
-                dropOffContentRow.appendChild(dropOffContentCell);
-                table.appendChild(dropOffContentRow);
-            });
-
-            missionContentDiv.appendChild(table);
-            missionSection.appendChild(missionContentDiv);
-            dateContent.appendChild(missionSection);
-        });
-
-        dateSection.appendChild(dateContent);
-        historyContainer.appendChild(dateSection);
-    });
 }
 
-// Add event listener for drop-off point selection
-dropOffPointSelect.addEventListener('change', () => {
-    // Focus on the amount input when a drop-off point is selected
-    amountInput.focus();
-    // Select all the text in the amount input
-    amountInput.select();
+// Call this function after your DOM is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initializeEventListeners();
+    updateHistoryTable(); // Call your existing function to populate the history table
 });
+
+// Function to clear the history
+function clearHistory() {
+    // Clear the delivery history from local storage
+    localStorage.removeItem('deliveryHistory');
+    
+    // Clear the cargo entries from local storage
+    localStorage.removeItem('cargoEntries');
+
+    // Remove all aUEC input boxes from local storage
+    const keysToRemove = Object.keys(localStorage).filter(key => key.startsWith('aUECValue_'));
+    
+    console.log('Keys to remove:', keysToRemove); // Debugging line to see which keys will be removed
+
+    keysToRemove.forEach(key => {
+        localStorage.removeItem(key); // Remove each aUEC input box value
+        console.log(`Removed key: ${key}`); // Debugging line to confirm removal
+    });
+
+    // Clear the aUEC input boxes in the UI
+    const aUECInputs = document.querySelectorAll('input[type="text"]'); // Adjust selector if necessary
+    aUECInputs.forEach(input => {
+        input.value = ''; // Clear each aUEC input box
+    });
+
+    // Update the history table to reflect the cleared history
+    updateHistoryTable();
+
+    // Show notification of successful history clearance
+    showNotification('History cleared successfully.');
+}
+
+// Assuming you have a button with an ID of 'deleteHistoryBtn'
+document.getElementById('deleteHistoryBtn').addEventListener('click', clearHistory);
+
+// Function to clear all aUECValue keys from local storage
+function clearValues() {
+    // Get all keys that start with 'aUECValue_'
+    const keysToRemove = Object.keys(localStorage).filter(key => key.startsWith('aUECValue_'));
+    
+    console.log('Keys to remove:', keysToRemove); // Debugging line to see which keys will be removed
+
+    keysToRemove.forEach(key => {
+        localStorage.removeItem(key); // Remove each aUEC input box value
+        console.log(`Removed key: ${key}`); // Debugging line to confirm removal
+    });
+
+    // Optionally, you can show a notification
+    showNotification('All aUEC values cleared successfully.');
+}
+
+// Add event listener for the Clear Values button
+document.getElementById('clearValuesBtn').addEventListener('click', clearValues);
+
+// Add event listener for commodity selection
+commoditySelect.addEventListener('change', () => {
+    // Focus on the amount input when a commodity is selected
+    amountInput.focus();
+});
+
+// Add the total value input box after the commodity rows
+const totalValueInput = document.createElement('input');
+totalValueInput.type = 'text';
+totalValueInput.placeholder = 'Total Value';
+totalValueInput.style.marginLeft = '5px'; // Reduced spacing
+totalValueInput.style.width = '80px'; // Set a fixed width for the Total Value input
+totalValueInput.style.border = 'none'; // Remove the border
+totalValueInput.style.borderRadius = '4px';
+totalValueInput.style.padding = '2px'; // Reset padding to original value
+totalValueInput.style.height = '24px'; // Set a specific height for the input
+totalValueInput.style.fontSize = '15px'; // Match the font size of the input
+totalValueInput.readOnly = true; // Make it read-only since it will be calculated
+
+// Function to update the total value
+function updateTotalValue() {
+    let totalValue = 0;
+    const aUECInputs = document.querySelectorAll('input[type="text"][placeholder="Value"]'); // Select all aUEC input boxes
+
+    aUECInputs.forEach(input => {
+        const value = parseFloat(input.value.replace(/,/g, '')) || 0; // Parse the value, default to 0 if NaN
+        totalValue += value; // Add to total
+    });
+
+    totalValueInput.value = formatNumberWithCommas(totalValue.toString()); // Update the total value input
+}
+
+// Add event listener to each aUEC input to update total value on input
+aUECInput.addEventListener('input', updateTotalValue);
+
+// Call updateTotalValue initially to set the correct total
+updateTotalValue();
 
 
 
