@@ -122,6 +122,7 @@ const data = {
   },
   commodities: [
     'Aluminium',
+    'Carbon',
     'Corundum',
     'Processed Food',
     'Pressurized ice',
