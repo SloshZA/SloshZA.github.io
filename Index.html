@@ -125,7 +125,56 @@
   <div id="History" class="tabcontent">
     <h2>Delivery History</h2>
     <div id="historyContainer">
-      <!-- History table will be dynamically generated here -->
+        <!-- History table will be dynamically generated here -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Mission ID</th>
+                    <th>Mission Reward</th>
+                    <th>Drop-off Point</th>
+                    <th>Commodity</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <input type="text" id="missionIdInput" placeholder="Enter Mission ID" />
+                    </td>
+                    <td>
+                        <input type="text" id="missionRewardInput_${id}" placeholder="Enter Mission Reward" />
+                    </td>
+                    <td>
+                        <input type="text" id="dropOffPointInput" placeholder="Enter Drop-off Point" />
+                    </td>
+                    <td>
+                        <input type="text" id="commodityInput" placeholder="Enter Commodity" />
+                    </td>
+                    <td>
+                        <!-- Removed the Update Cargo text box -->
+                    </td>
+                    <td class="action-cell">
+                        <button class="action-btn update-btn" onclick="updateCargoClick('${id}')">Update Cargo</button>
+                        <button class="action-btn remove-btn" onclick="removeCargo('${id}')">Remove Cargo</button>
+                    </td>
+                    <td>Status</td>
+                    <td>
+                        <input type="text" class="notes-input" placeholder="Add notes here" />
+                    </td>
+                </tr>
+                <!-- More rows... -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="1"><strong>Total:</strong></td>
+                    <td id="totalMissionReward">0</td>
+                    <td colspan="5"></td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
   </div>
   

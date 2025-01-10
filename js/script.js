@@ -112,12 +112,6 @@ const data = {
       Euterpe: [
         'Devlin Scrap & Salvage'
       ],
-      NewBabbage: [
-        'Microtech Logistics Depot S4LD01',
-        'Microtech Logistics Depot S4LD13',
-        'New Babbage Central',
-        'New Babbage Outpost'
-      ]
     }
   },
   commodities: [
@@ -223,8 +217,8 @@ function updateHistoryTable() {
         <th>Date</th>
         <th>Drop-off Point</th>
         <th>Commodity</th>
-        <th>Amount Delivered</th>
-        <th>%</th>
+        <th>Current Amount</th>
+        <th>Original Amount</th>
         <th>Status</th>
     `;
     table.appendChild(headerRow);
@@ -331,10 +325,15 @@ function updateHistoryTable() {
                 const dropOffHeaderRow = document.createElement('tr');
                 dropOffHeaderRow.innerHTML = `
                     <th style="border: 1px solid #ddd; padding: 8px;">Drop-off Point</th>
-                    <th style="border: 1px solid #ddd; padding: 8px;">Amount Delivered</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Current Amount</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">Original Amount</th>
                     <th style="border: 1px solid #ddd; padding: 8px;">%</th>
                 `;
                 dropOffTable.appendChild(dropOffHeaderRow);
+
+                // Initialize total amounts for this commodity
+                let totalCurrentAmount = 0;
+                let totalOriginalAmount = 0;
 
                 // Display all drop-off points for this commodity
                 groupedByDate[date][tripId][commodity].forEach(({ dropOffPoint, currentAmount, originalAmount }) => {
@@ -342,73 +341,26 @@ function updateHistoryTable() {
                     const percentage = ((currentAmount / originalAmount) * 100).toFixed(2); // Calculate percentage
                     row.innerHTML = `
                         <td style="border: 1px solid #ddd; padding: 8px;">${dropOffPoint}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${currentAmount}/${originalAmount}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${currentAmount}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${originalAmount}</td>
                         <td style="border: 1px solid #ddd; padding: 8px; ${percentage < 55 ? 'background-color: red; color: white;' : ''}">${percentage}%</td>
                     `;
                     dropOffTable.appendChild(row);
+
+                    // Update totals
+                    totalCurrentAmount += parseFloat(currentAmount); // Ensure we are adding numbers
+                    totalOriginalAmount += parseFloat(originalAmount); // Ensure we are adding numbers
                 });
 
-                // Add the aUEC input box next to the commodity name
-                const aUECInput = document.createElement('input');
-                aUECInput.type = 'text';
-                aUECInput.placeholder = 'Value';
-                aUECInput.style.marginLeft = '5px'; // Reduced spacing
-                aUECInput.style.width = '48px'; // Set a further reduced width (80% of 60px)
-                aUECInput.style.border = 'none'; // Remove the border
-                aUECInput.style.borderRadius = '4px';
-                aUECInput.style.padding = '2px'; // Reset padding to original value
-                aUECInput.style.height = '24px'; // Set a specific height for the input
-                aUECInput.style.fontSize = '15px'; // Increased font size by 3 pixels (from 12px to 15px)
-
-                // Add a pattern to allow only numbers
-                aUECInput.setAttribute('pattern', '[0-9]*'); // Allow only numeric input
-
-                // Remove the up and down arrows (spinners)
-                aUECInput.style.webkitAppearance = 'none'; // For Safari
-                aUECInput.style.mozAppearance = 'textfield'; // For Firefox
-                aUECInput.style.appearance = 'none'; // For other browsers
-
-                // Create a label for aUEC
-                const aUECLabel = document.createElement('span');
-                aUECLabel.textContent = ' aUEC'; // Label text
-                aUECLabel.style.marginLeft = '2px'; // Reduced spacing between input and label
-                aUECLabel.style.fontSize = '15px'; // Match the font size of the input
-                aUECLabel.style.paddingRight = '10px'; // Add padding to the right side of the label
-
-                // Append the input boxes and labels to the commodity cell
-                commodityCell.appendChild(aUECInput);
-                commodityCell.appendChild(aUECLabel);
-
-                // Prevent the collapsible tab from collapsing when clicking the input box
-                aUECInput.addEventListener('click', function(event) {
-                    event.stopPropagation(); // Stop the click event from bubbling up
-                });
-
-                // Function to format number with commas
-                function formatNumberWithCommas(value) {
-                    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                }
-
-                // Add event listener to format input value and adjust width
-                aUECInput.addEventListener('input', function() {
-                    // Remove any existing commas for processing
-                    let value = this.value.replace(/,/g, '');
-                    // Format the number with commas
-                    this.value = formatNumberWithCommas(value);
-                    
-                    // Adjust the width based on the length of the input value
-                    const length = this.value.length;
-                    this.style.width = `${Math.max(48, length * 8)}px`; // Adjust width dynamically, reduced multiplier
-
-                    // Save the value to local storage using trip ID and commodity name as part of the key
-                    localStorage.setItem(`aUECValue_${tripId}_${commodity}`, this.value); // Use trip ID and commodity name as part of the key
-                });
-
-                // Retrieve the value from local storage when populating the input box
-                const savedValue = localStorage.getItem(`aUECValue_${tripId}_${commodity}`);
-                if (savedValue) {
-                    aUECInput.value = savedValue; // Set the input box value to the saved value
-                }
+                // Add the total row for this commodity
+                const totalRow = document.createElement('tr');
+                totalRow.innerHTML = `
+                    <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">Total</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">${totalCurrentAmount}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">${totalOriginalAmount}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;"></td>
+                `;
+                dropOffTable.appendChild(totalRow);
 
                 dropOffContentCell.appendChild(dropOffTable);
                 dropOffContentRow.appendChild(dropOffContentCell);
@@ -430,9 +382,9 @@ function updateHistoryTable() {
 
 
 // Sort the arrays alphabetically
-Object.keys(data.planet).forEach(planet => data.planet[planet].sort());
-Object.keys(data.station).forEach(station => data.station[station].sort());
-data.commodities.sort();
+//Object.keys(data.planet).forEach(planet => data.planet[planet].sort());
+//Object.keys(data.station).forEach(station => data.station[station].sort());
+//data.commodities.sort()//
 
 const locationTypeSelect = document.getElementById('locationType');
 const locationSelect = document.getElementById('location');
@@ -458,6 +410,8 @@ function populateLocations() {
   const defaultOption = document.createElement('option');
   defaultOption.value = '';
   defaultOption.textContent = selectedType === 'station' ? '-- Select Station --' : '-- Select Planet --';
+  defaultOption.disabled = true; // Make default option unclickable
+  defaultOption.selected = true; // Set as selected
   locationSelect.appendChild(defaultOption);
   
   // Show/hide moon and drop-off point based on location type
@@ -518,10 +472,11 @@ function populateLocations() {
     dropOffGroup.style.display = 'flex'; // Show drop-off point dropdown
 
     // Populate with planets
-    Object.keys(data.planet).forEach(location => {
+    const planets = Object.keys(data.planet);
+    planets.forEach(planet => {
       const option = document.createElement('option');
-      option.value = location;
-      option.textContent = location;
+      option.value = planet;
+      option.textContent = planet;
       locationSelect.appendChild(option);
     });
   }
@@ -548,15 +503,89 @@ function populateDropOffPoints() {
     defaultOption.selected = true;
     dropOffPointSelect.appendChild(defaultOption);
 
+    // Add event listener to hide the default option when interacting with the dropdown
+    dropOffPointSelect.addEventListener('focus', () => {
+      defaultOption.style.display = 'none'; // Hide the default option
+    });
+
     // Case 1: Planet selected with no moon - show planet facilities
     if (selectedType === 'planet' && selectedLocation && !selectedMoon) {
       const dropOffPoints = data.planet[selectedLocation] || [];
-      dropOffPoints.sort();
+      
+      // Check if ArcCorp is selected
+      if (selectedLocation === 'ArcCorp') {
+        // Add the City option above Area 18
+        const cityOption = document.createElement('option');
+        cityOption.value = 'City';
+        cityOption.textContent = '-- City --';
+        cityOption.disabled = true; // Make City option unclickable
+        dropOffPointSelect.appendChild(cityOption); // Add City option
+
+        // Add Area 18 after City
+        dropOffPoints.forEach(point => {
+          if (point === 'Area 18') {
+            const option = document.createElement('option');
+            option.value = point;
+            option.textContent = point;
+            dropOffPointSelect.appendChild(option);
+          }
+        });
+      }
+
+      // Check if Crusader is selected
+      if (selectedLocation === 'Crusader') {
+        // Add the City option above Orison
+        const cityOption = document.createElement('option');
+        cityOption.value = 'City';
+        cityOption.textContent = '-- City --';
+        cityOption.disabled = true; // Make City option unclickable
+        dropOffPointSelect.appendChild(cityOption); // Add City option
+
+        // Add Orison after City
+        dropOffPoints.forEach(point => {
+          if (point === 'Orison') {
+            const option = document.createElement('option');
+            option.value = point;
+            option.textContent = point;
+            dropOffPointSelect.appendChild(option);
+          }
+        });
+      }
+
+      // Check if Hurston is selected
+      if (selectedLocation === 'Hurston') {
+        // Add the City option above Lorville
+        const cityOption = document.createElement('option');
+        cityOption.value = 'City';
+        cityOption.textContent = '-- City --';
+        cityOption.disabled = true; // Make City option unclickable
+        dropOffPointSelect.appendChild(cityOption); // Add City option
+
+        // Add Lorville after City
+        dropOffPoints.forEach(point => {
+          if (point === 'Lorville') {
+            const option = document.createElement('option');
+            option.value = point;
+            option.textContent = point;
+            dropOffPointSelect.appendChild(option);
+          }
+        });
+
+        // Add the unclickable Distribution Centers option below Lorville
+        const distributionCentersOption = document.createElement('option');
+        distributionCentersOption.value = 'Distribution Centers';
+        distributionCentersOption.textContent = '-- Distribution Centers --';
+        distributionCentersOption.disabled = true; // Make Distribution Centers option unclickable
+        dropOffPointSelect.appendChild(distributionCentersOption); // Add Distribution Centers option
+      }
+
       dropOffPoints.forEach(point => {
-        const option = document.createElement('option');
-        option.value = point;
-        option.textContent = point;
-        dropOffPointSelect.appendChild(option);
+        if (point !== 'Area 18' && point !== 'Orison' && point !== 'Lorville') { // Skip adding Area 18, Orison, and Lorville again
+          const option = document.createElement('option');
+          option.value = point;
+          option.textContent = point;
+          dropOffPointSelect.appendChild(option);
+        }
       });
       return;
     }
@@ -572,7 +601,6 @@ function populateDropOffPoints() {
 
       // Get moon facilities from data structure
       const moonFacilities = data.moon[selectedLocation][selectedMoon] || [];
-      moonFacilities.sort(); // Sort the options alphabetically
       moonFacilities.forEach(facility => {
         const option = document.createElement('option');
         option.value = facility;
@@ -587,6 +615,28 @@ function populateDropOffPoints() {
       dropOffPointSelect.innerHTML = '';
       return;
     }
+
+    // Case 4: Hurston selected - ensure Lorville is at the top
+    if (selectedType === 'planet' && selectedLocation === 'Hurston') {
+      const lorvilleOption = document.createElement('option');
+      lorvilleOption.value = 'Lorville';
+      lorvilleOption.textContent = 'Lorville';
+      dropOffPointSelect.appendChild(lorvilleOption); // Add Lorville first
+    }
+
+    // Populate drop-off points for Hurston
+    const dropOffPoints = data.planet[selectedLocation] || [];
+    dropOffPoints.forEach(point => {
+      if (point !== 'Lorville') { // Skip adding Lorville again
+        const option = document.createElement('option');
+        option.value = point;
+        option.textContent = point;
+        dropOffPointSelect.appendChild(option);
+      }
+    });
+
+    // Note: Ensure that no sorting is applied to the drop-off points
+    // The order of drop-off points is maintained as defined in the data structure.
 
   } catch (error) {
     console.error('Error in populateDropOffPoints:', error);
