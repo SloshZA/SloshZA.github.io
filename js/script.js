@@ -305,10 +305,67 @@ function updateHistoryTable() {
                 commodityCell.style.fontWeight = 'bold';
                 commodityCell.style.cursor = 'pointer';
                 commodityCell.textContent = `Commodity: ${commodity}`; // Display commodity name
-                commodityCell.onclick = () => {
-                    const commodityContent = commodityHeader.nextElementSibling; // Get the next row (the content)
-                    commodityContent.style.display = commodityContent.style.display === 'none' ? 'table-row' : 'none';
+                commodityCell.onclick = (event) => {
+                    // Check if the click target is not one of the text boxes
+                    if (event.target !== textBox1 && event.target !== textBox2) {
+                        const commodityContent = commodityHeader.nextElementSibling; // Get the next row (the content)
+                        commodityContent.style.display = commodityContent.style.display === 'none' ? 'table-row' : 'none';
+                    }
                 };
+                
+                // Create a text box next to the commodity header
+                const textBox1 = document.createElement('input');
+                textBox1.type = 'text';
+                textBox1.placeholder = 'Mission Reward'; // Placeholder text for the first text box
+                textBox1.style.width = '100px'; // Set a width for the first text box
+                textBox1.style.marginLeft = '10px'; // Add some space between the header and the first text box
+
+                // Add an event listener to format the input value for the first text box
+                textBox1.addEventListener('input', function() {
+                    // Remove any non-digit characters
+                    let value = this.value.replace(/\D/g, '');
+                    
+                    // Format the number with commas
+                    value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    
+                    // Update the text box value
+                    this.value = value;
+
+                    // Calculate and update the Estimated Payout
+                    const missionReward = parseFloat(this.value.replace(/,/g, '')) || 0; // Get the value from the Mission Reward text box
+
+                    // Calculate Estimated Payout using total values from the total row
+                    if (totalOriginalAmount > 0) {
+                        const estimatedPayout = Math.floor((missionReward / totalOriginalAmount) * totalCurrentAmount); // Round down to nearest whole number
+                        textBox2.value = estimatedPayout.toLocaleString(); // Update the Estimated Payout text box with formatted value
+                    } else {
+                        textBox2.value = ''; // Clear the Estimated Payout if original amount is zero
+                    }
+                });
+
+                // Create a second text box next to the first one
+                const textBox2 = document.createElement('input');
+                textBox2.type = 'text';
+                textBox2.placeholder = 'Estimated Payout'; // Change placeholder text to "Estimated Payout"
+                textBox2.style.width = '100px'; // Set a width for the second text box
+                textBox2.style.marginLeft = '10px'; // Add some space between the first and second text box
+
+                // Add an event listener to format the input value for the second text box
+                textBox2.addEventListener('input', function() {
+                    // Remove any non-digit characters
+                    let value = this.value.replace(/\D/g, '');
+                    
+                    // Format the number with commas
+                    value = value.replace(/\B(?=(\d{3})+(?!\d))/g, '');
+                    
+                    // Update the text box value
+                    this.value = value;
+                });
+
+                // Append both text boxes to the commodity cell
+                commodityCell.appendChild(textBox1);
+                commodityCell.appendChild(textBox2);
+                
                 commodityHeader.appendChild(commodityCell);
                 commoditiesTable.appendChild(commodityHeader);
 
@@ -1120,9 +1177,96 @@ function addEntryToHistory(commodityName, dropOffPoint, amount) {
   const amountCell = row.insertCell(2);
   amountCell.textContent = amount; // Set the amount
 
-  // Optionally, add a cell for actions (edit/delete)
-  const actionCell = row.insertCell(3);
-  actionCell.innerHTML = '<button onclick="editEntry(this)">Edit</button> <button onclick="deleteEntry(this)">Delete</button>';
+  // Create a cell for the text box next to the commodity ID
+  const textBoxCell = row.insertCell(3);
+  const textBox = document.createElement('input');
+  textBox.type = 'text';
+  textBox.placeholder = 'Mission Reward'; // Change placeholder text to "Mission Reward"
+  textBox.style.width = '100px'; // Set a width for the text box
+  textBox.style.marginLeft = '10px'; // Add some space between the header and the text box
+
+  // Add an event listener to format the input value
+  textBox.addEventListener('input', function() {
+    // Remove any non-digit characters
+    let value = this.value.replace(/\D/g, '');
+    
+    // Format the number with commas
+    value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // Update the text box value
+    this.value = value;
+
+    // Calculate and update the Estimated Payout
+    const missionReward = parseFloat(this.value.replace(/,/g, '')) || 0; // Get the value from the Mission Reward text box
+
+    // Calculate Estimated Payout using total values from the total row
+    if (totalOriginalAmount > 0) {
+        const estimatedPayout = Math.floor((missionReward / totalOriginalAmount) * totalCurrentAmount); // Round down to nearest whole number
+        textBox2.value = estimatedPayout.toLocaleString(); // Update the Estimated Payout text box with formatted value
+    } else {
+        textBox2.value = ''; // Clear the Estimated Payout if original amount is zero
+    }
+  });
+
+  // Append the text box to the commodity cell
+  commodityCell.appendChild(textBox);
+  
+  commodityHeader.appendChild(commodityCell);
+  commoditiesTable.appendChild(commodityHeader);
+
+  // Create a row for the drop-off points
+  const dropOffContentRow = document.createElement('tr');
+  dropOffContentRow.style.display = 'none'; // Initially hidden
+
+  const dropOffContentCell = document.createElement('td');
+  dropOffContentCell.colSpan = 5; // Span across both columns
+  const dropOffTable = document.createElement('table');
+  dropOffTable.style.width = '100%';
+  dropOffTable.style.borderCollapse = 'collapse';
+
+  const dropOffHeaderRow = document.createElement('tr');
+  dropOffHeaderRow.innerHTML = `
+    <th style="border: 1px solid #ddd; padding: 8px;">Drop-off Point</th>
+    <th style="border: 1px solid #ddd; padding: 8px;">Current Amount</th>
+    <th style="border: 1px solid #ddd; padding: 8px;">Original Amount</th>
+    <th style="border: 1px solid #ddd; padding: 8px;">%</th>
+  `;
+  dropOffTable.appendChild(dropOffHeaderRow);
+
+  // Initialize total amounts for this commodity
+  let totalCurrentAmount = 0;
+  let totalOriginalAmount = 0;
+
+  // Display all drop-off points for this commodity
+  groupedByDate[date][tripId][commodity].forEach(({ dropOffPoint, currentAmount, originalAmount }) => {
+    const row = document.createElement('tr');
+    const percentage = ((currentAmount / originalAmount) * 100).toFixed(2); // Calculate percentage
+    row.innerHTML = `
+      <td style="border: 1px solid #ddd; padding: 8px;">${dropOffPoint}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">${currentAmount}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">${originalAmount}</td>
+      <td style="border: 1px solid #ddd; padding: 8px; ${percentage < 55 ? 'background-color: red; color: white;' : ''}">${percentage}%</td>
+    `;
+    dropOffTable.appendChild(row);
+
+    // Update totals
+    totalCurrentAmount += parseFloat(currentAmount); // Ensure we are adding numbers
+    totalOriginalAmount += parseFloat(originalAmount); // Ensure we are adding numbers
+  });
+
+  // Add the total row for this commodity
+  const totalRow = document.createElement('tr');
+  totalRow.innerHTML = `
+    <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">Total</td>
+    <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">${totalCurrentAmount}</td>
+    <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">${totalOriginalAmount}</td>
+    <td style="border: 1px solid #ddd; padding: 8px;"></td>
+  `;
+  dropOffTable.appendChild(totalRow);
+
+  dropOffContentCell.appendChild(dropOffTable);
+  dropOffContentRow.appendChild(dropOffContentCell);
+  commoditiesTable.appendChild(dropOffContentRow);
 }
 
 // Example function to handle adding an entry from the deliveries table
@@ -1425,7 +1569,7 @@ function addEntry() {
   // Clear the amount input box
   amountInput.value = '';
   
-  // Clear the aUEC input box
+  // Clear the aUEC input boxes
   const aUECInputs = document.querySelectorAll('input[type="text"]'); // Adjust selector if necessary
   aUECInputs.forEach(input => {
     input.value = ''; // Clear each aUEC input box
@@ -1581,7 +1725,7 @@ function markDelivered(dropOffPoint) {
     statusCell.textContent = 'Delivered'; // Update the status cell
   });
 
-  // Clear the corresponding aUEC input box for each commodity
+  // Clear the corresponding aUEC input boxes for each commodity
   const commodities = Object.keys(cargoEntries).filter(entry => entry.dropOffPoint === dropOffPoint);
   commodities.forEach(commodity => {
     const aUECInput = document.querySelector(`input[type="text"][data-commodity="${commodity}"]`); // Adjust selector if necessary

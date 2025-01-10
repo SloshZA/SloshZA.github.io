@@ -275,7 +275,7 @@ tr:nth-child(even) {
 /* Adjust the widths of the columns */
 th:nth-child(1),
 td:nth-child(1) {
-  width: 10%; /* Drop-off point */
+  width: 30%; /* Increase width for Drop-off Point by another 50% */
 }
 
 th:nth-child(2),
@@ -290,7 +290,7 @@ td:nth-child(3) {
 
 th:nth-child(4),
 td:nth-child(4) {
-  width: 60%; /* Actions */
+  width: 59%; /* Actions */
 }
 
 /* Add this to align the button to the left */
