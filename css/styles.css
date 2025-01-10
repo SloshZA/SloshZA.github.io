@@ -1659,3 +1659,23 @@ select:not(#locationType):not(#location):not(#moon) {
     display: none;
 }
 
+.collapsible-group {
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.collapsible-header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+}
+
+.collapsible-content {
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-top: 1px solid #ccc;
+}
+

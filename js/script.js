@@ -186,6 +186,39 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
     initializeEventListeners();
+
+    // Function to populate the Quick Lookup dropdown
+    function populateQuickLookup() {
+        const quickLookupSelect = document.getElementById('quickLookup');
+        quickLookupSelect.innerHTML = ''; // Clear previous options
+
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select an option';
+        quickLookupSelect.appendChild(defaultOption);
+
+        // Populate with station locations
+        Object.keys(data.station).forEach(station => {
+            const option = document.createElement('option');
+            option.value = station;
+            option.textContent = station; // Use station name as the display text
+            quickLookupSelect.appendChild(option);
+        });
+
+        // Populate with drop-off points
+        Object.keys(data.planet).forEach(planet => {
+            data.planet[planet].forEach(dropOffPoint => {
+                const option = document.createElement('option');
+                option.value = dropOffPoint;
+                option.textContent = dropOffPoint; // Use drop-off point name as the display text
+                quickLookupSelect.appendChild(option);
+            });
+        });
+    }
+
+    // Call the function to populate the Quick Lookup dropdown on page load
+    populateQuickLookup();
 });
 
 
@@ -1950,23 +1983,227 @@ aUECInput.addEventListener('input', updateTotalValue);
 // Call updateTotalValue initially to set the correct total
 updateTotalValue();
 
-// Add this function to handle the pop-out button click
-document.getElementById('popoutBtn').addEventListener('click', function() {
-    const popoutContainer = document.getElementById('popoutContainer');
-    if (popoutContainer.style.display === 'none' || popoutContainer.style.display === '') {
-        popoutContainer.style.display = 'block'; // Show the pop-out form
-    } else {
-        popoutContainer.style.display = 'none'; // Hide the pop-out form
-    }
+// Function to populate the Quick Lookup dropdown
+function populateQuickLookup() {
+    const quickLookupSelect = document.getElementById('quickLookup');
+    quickLookupSelect.innerHTML = ''; // Clear previous options
+
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Select an option';
+    quickLookupSelect.appendChild(defaultOption);
+
+    // Populate with station locations
+    Object.keys(data.station).forEach(station => {
+        const option = document.createElement('option');
+        option.value = station;
+        option.textContent = station; // Use station name as the display text
+        quickLookupSelect.appendChild(option);
+    });
+
+    // Populate with drop-off points
+    Object.keys(data.planet).forEach(planet => {
+        data.planet[planet].forEach(dropOffPoint => {
+            const option = document.createElement('option');
+            option.value = dropOffPoint;
+            option.textContent = dropOffPoint; // Use drop-off point name as the display text
+            quickLookupSelect.appendChild(option);
+        });
+    });
+}
+
+// Call the function to populate the Quick Lookup dropdown on page load
+document.addEventListener('DOMContentLoaded', () => {
+    populateQuickLookup();
 });
 
-// Optional: Close the pop-out form when clicking outside of it
-window.addEventListener('click', function(event) {
-    const popoutContainer = document.getElementById('popoutContainer');
-    if (event.target === popoutContainer) {
-        popoutContainer.style.display = 'none'; // Hide if clicked outside
-    }
+// Add this function to handle Quick Lookup selection
+function handleQuickLookupSelection() {
+    const quickLookupSelect = document.getElementById('quickLookup');
+    const locationTypeSelect = document.getElementById('locationType');
+    const locationSelect = document.getElementById('location');
+    const dropOffPointSelect = document.getElementById('dropOffPoint');
+
+    quickLookupSelect.addEventListener('change', () => {
+        const selectedValue = quickLookupSelect.value;
+
+        // Logic to match the selected value with the dropdowns
+        if (selectedValue) {
+            // Example logic to set the location type and location based on the selected value
+            if (data.station[selectedValue]) {
+                locationTypeSelect.value = 'station';
+                locationSelect.value = selectedValue; // Set the location to the selected station
+                populateDropOffPoints(); // Populate drop-off points based on the selected station
+            } else if (data.planet[selectedValue]) {
+                locationTypeSelect.value = 'planet';
+                locationSelect.value = selectedValue; // Set the location to the selected planet
+                populateDropOffPoints(); // Populate drop-off points based on the selected planet
+            } else {
+                // If it's a drop-off point, set the drop-off point directly
+                dropOffPointSelect.value = selectedValue;
+            }
+        }
+    });
+}
+
+// Call the function to initialize the Quick Lookup functionality
+handleQuickLookupSelection();
+
+// Add this function to build the payouts table
+function buildPayoutsTable(missionReward) {
+    console.log('Building payouts table with reward:', missionReward); // Debugging line
+    const payoutsContainer = document.getElementById('payoutsContainer');
+    const payoutsTable = document.createElement('table');
+    payoutsTable.innerHTML = `
+        <thead>
+            <tr>
+                <th>Mission Reward</th>
+                <th>Estimated Payout</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>${missionReward}</td>
+                <td>${calculateEstimatedPayout(missionReward)}</td>
+            </tr>
+        </tbody>
+    `;
+    payoutsContainer.appendChild(payoutsTable);
+    console.log('Payouts table added to container.'); // Debugging line
+}
+
+// Function to calculate estimated payout (you can adjust the logic as needed)
+function calculateEstimatedPayout(missionReward) {
+    return (parseFloat(missionReward) * 0.8).toFixed(2); // Assuming 80% payout
+}
+
+// Function to save all mission data to local storage
+function saveMissionData(missionEntries) {
+    localStorage.setItem('missionData', JSON.stringify(missionEntries));
+}
+
+// Function to load mission data from local storage
+function loadMissionData() {
+    const missionEntries = JSON.parse(localStorage.getItem('missionData')) || [];
+    missionEntries.forEach(entry => {
+        addMissionEntryToTable(entry); // Add each entry to the table
+    });
+}
+
+// Function to add a mission entry to the table
+function addMissionEntryToTable(entry) {
+    const { id, missionReward, estimatedPayout } = entry;
+    const payoutsContainer = document.getElementById('payoutsContainer');
+    
+    const payoutsTable = document.createElement('table');
+    payoutsTable.innerHTML = `
+        <thead>
+            <tr>
+                <th>Mission Reward</th>
+                <th>Estimated Payout</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr id="entry-${id}">
+                <td>${missionReward}</td>
+                <td>${estimatedPayout}</td>
+            </tr>
+        </tbody>
+    `;
+    payoutsContainer.appendChild(payoutsTable);
+}
+
+// Ensure you have the correct reference to the Mission Reward input
+const textBox1 = document.getElementById('missionRewardInput'); // Adjust the ID as necessary
+const updateButton = document.getElementById('updateMissionRewardBtn'); // Reference to the button
+
+// Load mission data when the page is loaded
+document.addEventListener('DOMContentLoaded', loadMissionData);
+
+// Function to update the mission reward
+updateButton.addEventListener('click', function() {
+    const missionReward = textBox1.value.replace(/,/g, '');
+    const estimatedPayout = calculateEstimatedPayout(missionReward); // Calculate estimated payout
+
+    // Create a unique ID for this entry
+    const uniqueId = new Date().getTime(); // Use timestamp as a unique ID
+
+    // Save the entry
+    const missionEntry = {
+        id: uniqueId,
+        missionReward: missionReward,
+        estimatedPayout: estimatedPayout
+    };
+
+    // Load existing entries from local storage
+    const existingEntries = JSON.parse(localStorage.getItem('missionData')) || [];
+    existingEntries.push(missionEntry); // Add the new entry
+    saveMissionData(existingEntries); // Save all entries back to local storage
+
+    console.log('Mission Reward Updated:', missionReward); // Debugging line
+    addMissionEntryToTable(missionEntry); // Update the payouts table
 });
+
+// Modify the existing event listener for the Mission Reward text box
+textBox1.addEventListener('input', function() {
+    const missionReward = this.value.replace(/,/g, '');
+    const estimatedPayout = calculateEstimatedPayout(missionReward); // Calculate estimated payout
+
+    // Update the display without saving
+    const uniqueId = new Date().getTime(); // Use timestamp as a unique ID
+    addMissionEntryToTable({ id: uniqueId, missionReward, estimatedPayout }); // Update the payouts table
+});
+
+// Function to create a collapsible group for payouts
+function createCollapsibleGroup(date, trip, commodity) {
+    const groupContainer = document.createElement('div');
+    groupContainer.className = 'collapsible-group';
+
+    // Create the header for the collapsible group
+    const header = document.createElement('div');
+    header.className = 'collapsible-header';
+    header.textContent = `${date} - Trip: ${trip} - Commodity: ${commodity}`;
+    header.onclick = function() {
+        const content = this.nextElementSibling;
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // Create the content area for the collapsible group
+    const content = document.createElement('div');
+    content.className = 'collapsible-content';
+    content.style.display = 'none'; // Initially hidden
+
+    // Add any additional information you want to display in the content area
+    const info = document.createElement('p');
+    info.textContent = 'Additional information about this trip can go here.';
+    content.appendChild(info);
+
+    // Append header and content to the group container
+    groupContainer.appendChild(header);
+    groupContainer.appendChild(content);
+
+    return groupContainer;
+}
+
+// Example usage: Add collapsible groups to the payouts history
+function addPayoutsHistory() {
+    const payoutsHistory = document.getElementById('payoutsHistory');
+
+    // Example data (replace this with your actual data)
+    const exampleData = [
+        { date: '2025-01-09', trip: '#1', commodity: 'Aluminium' },
+        { date: '2025-01-10', trip: '#2', commodity: 'Gold' }
+    ];
+
+    exampleData.forEach(entry => {
+        const group = createCollapsibleGroup(entry.date, entry.trip, entry.commodity);
+        payoutsHistory.appendChild(group);
+    });
+}
+
+// Call this function to populate the payouts history on page load
+document.addEventListener('DOMContentLoaded', addPayoutsHistory);
 
 
 
