@@ -2205,6 +2205,11 @@ function addPayoutsHistory() {
 // Call this function to populate the payouts history on page load
 document.addEventListener('DOMContentLoaded', addPayoutsHistory);
 
+// Overwolf API example
+overwolf.games.onGameInfoUpdated.addListener(function (info) {
+    // Handle game info updates
+});
+
 
 
 
