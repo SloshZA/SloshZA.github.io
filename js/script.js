@@ -749,16 +749,20 @@ function populateCommodities() {
 
 // Function to handle clearing the log
 function handleClearLog() {
-  if (!clearLogClicked) {
-    showNotification('Click again to confirm clearing the logs.');
-    clearLogClicked = true;
-    return;
-  }
+    if (!clearLogClicked) {
+        showNotification('Click again to confirm clearing the logs.');
+        clearLogClicked = true;
+        return;
+    }
 
-  localStorage.removeItem('cargoEntries');
-  updateResultTable(); // Keep the manifest title and re-render the table without any entries
-  clearLogClicked = false;
-  showNotification('Logs have been cleared.');
+    localStorage.removeItem('cargoEntries');
+    updateResultTable(); // Keep the manifest title and re-render the table without any entries
+
+    // Update the total cargo amount based on original amounts
+    updateTotalCargo(); // Ensure the total is updated after clearing the log
+
+    clearLogClicked = false;
+    showNotification('Logs have been cleared.');
 }
 
 // Initialize the page
@@ -806,6 +810,7 @@ function addDeliveryToHistory(entry) {
     ...entry,
     date: now.toISOString().split('T')[0], // Get only the date part (YYYY-MM-DD)
     time: now.toLocaleTimeString(),        // Get local time string
+    missionReward: entry.missionReward // Include missionReward in the entry
   };
 
   deliveryHistory.push(deliveryEntry);
@@ -830,70 +835,73 @@ function groupHistoryByDate(history) {
 
 // Function to move delivered entries to the history table
 function moveDeliveredToHistory() {
-  let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
-  const deliveredEntries = cargoEntries.filter(entry => entry.status === 'Delivered');
+    let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
+    const deliveredEntries = cargoEntries.filter(entry => entry.status === 'Delivered');
 
-  if (deliveredEntries.length === 0) {
-    showNotification('No delivered entries to move to history.');
-    return;
-  }
-
-  let historyEntries = JSON.parse(localStorage.getItem('deliveryHistory')) || [];
-
-  // Get current date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
-  
-  // Count existing missions for today only
-  const todayMissionCount = historyEntries.filter(entry => {
-    return entry.date === today && entry.missionId.startsWith('#');
-  }).length;
-
-  // Create mission ID with sequential number (resets each day)
-  const missionNumber = todayMissionCount + 1;
-  const missionId = `#${missionNumber}`;
-
-  // Create a simple history entry with numbered mission ID and date
-  const historyEntry = {
-    missionId: missionId,
-    date: today,
-    dropOffPoints: {}
-  };
-
-  // Group delivered entries by drop-off point
-  deliveredEntries.forEach(entry => {
-    const dropOffPoint = entry.dropOffPoint;
-
-    if (!historyEntry.dropOffPoints[dropOffPoint]) {
-      historyEntry.dropOffPoints[dropOffPoint] = {
-        commodities: []
-      };
+    if (deliveredEntries.length === 0) {
+        showNotification('No delivered entries to move to history.');
+        return;
     }
 
-    historyEntry.dropOffPoints[dropOffPoint].commodities.push({
-      commodity: entry.commodity,
-      currentAmount: entry.currentAmount,
-      originalAmount: entry.originalAmount
+    let historyEntries = JSON.parse(localStorage.getItem('deliveryHistory')) || [];
+
+    // Get current date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Count existing missions for today only
+    const todayMissionCount = historyEntries.filter(entry => {
+        return entry.date === today && entry.missionId.startsWith('#');
+    }).length;
+
+    // Create mission ID with sequential number (resets each day)
+    const missionNumber = todayMissionCount + 1;
+    const missionId = `#${missionNumber}`;
+
+    // Create a simple history entry with numbered mission ID and date
+    const historyEntry = {
+        missionId: missionId,
+        date: today,
+        dropOffPoints: {}
+    };
+
+    // Group delivered entries by drop-off point
+    deliveredEntries.forEach(entry => {
+        const dropOffPoint = entry.dropOffPoint;
+
+        if (!historyEntry.dropOffPoints[dropOffPoint]) {
+            historyEntry.dropOffPoints[dropOffPoint] = {
+                commodities: []
+            };
+        }
+
+        historyEntry.dropOffPoints[dropOffPoint].commodities.push({
+            commodity: entry.commodity,
+            currentAmount: entry.currentAmount,
+            originalAmount: entry.originalAmount
+        });
     });
-  });
 
-  historyEntries.push(historyEntry);
-  localStorage.setItem('deliveryHistory', JSON.stringify(historyEntries));
+    historyEntries.push(historyEntry);
+    localStorage.setItem('deliveryHistory', JSON.stringify(historyEntries));
 
-  cargoEntries = cargoEntries.filter(entry => entry.status !== 'Delivered');
-  localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
+    cargoEntries = cargoEntries.filter(entry => entry.status !== 'Delivered');
+    localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
 
-  updateResultTable();
-  updateHistoryTable();
+    updateResultTable();
+    updateHistoryTable();
 
-  showNotification(`All delivered entries have been moved to history under Mission ${missionId}`);
+    // Update the total cargo amount based on original amounts
+    updateTotalCargo(); // Ensure the total is updated after moving delivered entries
 
-  // Apply colors to new history elements
-  const historyElements = document.querySelectorAll(`
-    .date-section h3,
-    .mission-section h4,
-    .drop-off-section h5
-  `);
-  applyCurrentColor(historyElements);
+    showNotification(`All delivered entries have been moved to history under Mission ${missionId}`);
+
+    // Apply colors to new history elements
+    const historyElements = document.querySelectorAll(`
+        .date-section h3,
+        .mission-section h4,
+        .drop-off-section h5
+    `);
+    applyCurrentColor(historyElements);
 }
 
 // Dark mode toggle with persistence
@@ -1307,9 +1315,22 @@ function handleDeliveryToHistory() {
   const commodityName = document.getElementById('commoditySelect').value; // Get the selected commodity name
   const dropOffPoint = dropOffPointSelect.value; // Get the selected drop-off point
   const amount = document.getElementById('amountInput').value; // Get the amount
+  const missionRewardInput = document.getElementById('missionRewardInput'); // Get the mission reward input
+  const missionReward = missionRewardInput.value; // Get the mission reward
 
   if (commodityName && dropOffPoint && amount) {
-    addEntryToHistory(commodityName, dropOffPoint, amount); // Call the function to add the entry to the history
+    const entry = {
+      commodity: commodityName,
+      dropOffPoint: dropOffPoint,
+      currentAmount: amount,
+      originalAmount: amount,
+      missionReward: missionReward // Include missionReward in the entry
+    };
+    addEntryToHistory(entry); // Call the function to add the entry to the history
+
+    // Save the mission reward to local storage with a unique key
+    const uniqueId = `missionReward_${new Date().getTime()}`; // Create a unique ID based on timestamp
+    localStorage.setItem(uniqueId, missionReward); // Save the mission reward
   } else {
     alert('Please select a commodity, drop-off point, and enter an amount.'); // Alert if any field is missing
   }
@@ -1565,58 +1586,106 @@ window.addEventListener('message', (event) => {
     }
 });
 
-// Add entry to local storage and update result table
+// Function to update the total cargo amount based on original amounts
+function updateTotalCargo() {
+    const cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
+    const totalCargo = cargoEntries.reduce((total, entry) => {
+        return total + parseInt(entry.originalAmount || 0); // Sum originalAmount instead of currentAmount
+    }, 0);
+    document.getElementById('totalCargo').value = totalCargo; // Update the total cargo text box
+}
+
+// Modify the addEntry function to update the total cargo
 function addEntry() {
-  const location = locationSelect.value;
-  const moon = moonSelect.value;
-  const dropOffPoint = locationTypeSelect.value === 'station' ? location : dropOffPointSelect.value;
-  const commodity = commoditySelect.value;
-  const amount = amountInput.value;
+    const location = locationSelect.value;
+    const moon = moonSelect.value;
+    const dropOffPoint = locationTypeSelect.value === 'station' ? location : dropOffPointSelect.value;
+    const commodity = commoditySelect.value;
+    const amount = amountInput.value;
 
-  if (!location || !commodity || !amount) {
-    showNotification('Please fill all fields');
-    return;
-  }
+    if (!location || !commodity || !amount) {
+        showNotification('Please fill all fields');
+        return;
+    }
 
-  // Add specific check for drop-off point when not in station mode
-  if (locationTypeSelect.value !== 'station' && !dropOffPoint) {
-    showNotification('Please select a drop-off point');
-    return;
-  }
+    // Add specific check for drop-off point when not in station mode
+    if (locationTypeSelect.value !== 'station' && !dropOffPoint) {
+        showNotification('Please select a drop-off point');
+        return;
+    }
 
-  let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
-  const newEntry = {
-    id: new Date().toISOString(),
-    location,
-    moon,
-    dropOffPoint,
-    commodity,
-    originalAmount: amount,
-    currentAmount: amount,
-    status: 'Pending'
-  };
+    let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
+    const newEntry = {
+        id: new Date().toISOString(),
+        location,
+        moon,
+        dropOffPoint,
+        commodity,
+        originalAmount: amount,
+        currentAmount: amount,
+        status: 'Pending'
+    };
 
-  cargoEntries.push(newEntry);
-  localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
-  
-  // Clear the amount input box
-  amountInput.value = '';
-  
-  // Clear the aUEC input boxes
-  const aUECInputs = document.querySelectorAll('input[type="text"]'); // Adjust selector if necessary
-  aUECInputs.forEach(input => {
-    input.value = ''; // Clear each aUEC input box
-  });
+    cargoEntries.push(newEntry);
+    localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
+    
+    // Clear the amount input box
+    amountInput.value = '';
+    
+    // Clear the aUEC input boxes
+    const aUECInputs = document.querySelectorAll('input[type="text"]'); // Adjust selector if necessary
+    aUECInputs.forEach(input => {
+        input.value = ''; // Clear each aUEC input box
+    });
 
-  updateResultTable();
+    updateResultTable();
+    updateTotalCargo(); // Update the total cargo amount based on original amounts
 
-  // Apply colors to new buttons after table update
-  const newButtons = document.querySelectorAll(
-    `button.action-btn,
-    .delivered,
-    .action-btn.update-btn`
-  );
-  applyCurrentColor(newButtons);
+    // Apply colors to new buttons after table update
+    const newButtons = document.querySelectorAll(
+        `button.action-btn,
+        .delivered,
+        .action-btn.update-btn`
+    );
+    applyCurrentColor(newButtons);
+}
+
+// Update the updateCargo function to also update the total cargo
+async function updateCargo(id) {
+    const newAmount = document.getElementById(`updateAmount_${id}`).value;
+    let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
+
+    // Find the entry to get the original amount
+    const entry = cargoEntries.find(entry => entry.id === id);
+    if (!entry) return;
+
+    // Validate the new amount
+    if (!newAmount || isNaN(newAmount) || newAmount <= 0) {
+        showNotification('Please enter a valid amount.');
+        return;
+    }
+
+    // Check if new amount exceeds original amount
+    if (parseInt(newAmount) > parseInt(entry.originalAmount)) {
+        showNotification(`Amount cannot exceed original amount of ${entry.originalAmount}`);
+        document.getElementById(`updateAmount_${id}`).value = entry.currentAmount;
+        return;
+    }
+
+    // Update the current amount
+    cargoEntries = cargoEntries.map(entry => {
+        if (entry.id === id) {
+            entry.currentAmount = parseInt(newAmount);
+        }
+        return entry;
+    });
+
+    // Save updated entries to local storage
+    localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
+
+    // Update the table
+    updateResultTable();
+    updateTotalCargo(); // Update the total cargo amount based on original amounts
 }
 
 // Update the result table to reflect the latest cargo entries
@@ -1714,16 +1783,19 @@ function groupByDropOffPoint(entries) {
 
 // Function to remove cargo entry by unique ID
 function removeCargo(id) {
-  let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
+    let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
 
-  // Filter out the cargo entry with the matching ID
-  cargoEntries = cargoEntries.filter(entry => entry.id !== id);
+    // Filter out the cargo entry with the matching ID
+    cargoEntries = cargoEntries.filter(entry => entry.id !== id);
 
-  // Save updated cargo entries back to local storage
-  localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
+    // Save updated cargo entries back to local storage
+    localStorage.setItem('cargoEntries', JSON.stringify(cargoEntries));
 
-  // Update the table to reflect the removal
-  updateResultTable();
+    // Update the table to reflect the removal
+    updateResultTable();
+
+    // Update the total cargo amount based on original amounts
+    updateTotalCargo(); // Ensure the total is updated after removal
 }
 
 // Function to mark all cargo under a drop-off point as delivered
@@ -2075,7 +2147,7 @@ function buildPayoutsTable(missionReward) {
 
 // Function to calculate estimated payout (you can adjust the logic as needed)
 function calculateEstimatedPayout(missionReward) {
-    return (parseFloat(missionReward) * 0.8).toFixed(2); // Assuming 80% payout
+    return (parseFloat(missionReward) * 0.8).toFixed(2); // Example calculation
 }
 
 // Function to save all mission data to local storage
@@ -2205,10 +2277,99 @@ function addPayoutsHistory() {
 // Call this function to populate the payouts history on page load
 document.addEventListener('DOMContentLoaded', addPayoutsHistory);
 
-// Overwolf API example
-overwolf.games.onGameInfoUpdated.addListener(function (info) {
-    // Handle game info updates
+// Function to update the mission reward
+function updateMissionReward() {
+    const missionRewardInput = document.getElementById('uniqueMissionRewardInput'); // Ensure this ID matches your HTML
+
+    const missionReward = missionRewardInput.value.replace(/,/g, '');
+
+    // Debugging: Log the value before saving
+    console.log('Mission Reward:', missionReward);
+
+    // Save the mission reward to local storage
+    localStorage.setItem('missionReward', missionReward);
+}
+
+// Function to load mission data from local storage
+function loadMissionData() {
+    const missionRewardInput = document.getElementById('uniqueMissionRewardInput'); // Ensure this ID matches your HTML
+
+    const savedMissionReward = localStorage.getItem('missionReward');
+
+    // Debugging: Log the saved value
+    console.log('Saved Mission Reward:', savedMissionReward);
+
+    if (savedMissionReward) {
+        missionRewardInput.value = savedMissionReward; // Populate the mission reward input
+    }
+}
+
+// Call loadMissionData when the page loads
+document.addEventListener('DOMContentLoaded', loadMissionData);
+
+// Add event listener for mission reward input
+const missionRewardInput = document.getElementById('uniqueMissionRewardInput'); // Ensure this ID matches your HTML
+
+// Listen for input changes to save the mission reward
+missionRewardInput.addEventListener('input', updateMissionReward);
+
+// Add event listener for Enter key in mission reward input
+missionRewardInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // Prevent default form submission
+        updateMissionReward(); // Call the function to save the mission reward
+    }
 });
+
+let missionEntryCount = 0; // Counter to keep track of mission entries
+
+function addMissionEntry() {
+    missionEntryCount++; // Increment the counter for each new entry
+    const uniqueId = `missionRewardInput_${missionEntryCount}`; // Create a unique ID
+
+    // Create a new mission entry element
+    const missionEntryDiv = document.createElement('div');
+    missionEntryDiv.className = 'mission-entry'; // Add a class for styling if needed
+
+    // Create the input for mission reward
+    const missionRewardInput = document.createElement('input');
+    missionRewardInput.type = 'text';
+    missionRewardInput.id = uniqueId; // Set the unique ID
+    missionRewardInput.placeholder = 'Enter Mission Reward';
+
+    // Append the input to the mission entry div
+    missionEntryDiv.appendChild(missionRewardInput);
+
+    // Append the mission entry div to the container (make sure to have a container in your HTML)
+    document.getElementById('missionEntriesContainer').appendChild(missionEntryDiv);
+
+    // Add event listener for input changes to save the mission reward
+    missionRewardInput.addEventListener('input', function() {
+        localStorage.setItem(uniqueId, missionRewardInput.value); // Save the value to local storage
+    });
+
+    // Load saved value if it exists
+    const savedValue = localStorage.getItem(uniqueId);
+    if (savedValue) {
+        missionRewardInput.value = savedValue; // Populate the input with the saved value
+    }
+}
+
+function loadMissionEntries() {
+    for (let i = 1; i <= missionEntryCount; i++) {
+        const uniqueId = `missionRewardInput_${i}`;
+        const savedValue = localStorage.getItem(uniqueId);
+        if (savedValue) {
+            const missionRewardInput = document.getElementById(uniqueId);
+            if (missionRewardInput) {
+                missionRewardInput.value = savedValue; // Populate the input with the saved value
+            }
+        }
+    }
+}
+
+// Call loadMissionEntries when the page loads
+document.addEventListener('DOMContentLoaded', loadMissionEntries);
 
 
 

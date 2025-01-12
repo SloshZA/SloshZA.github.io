@@ -89,10 +89,15 @@
         <input type="number" id="amount" name="amount" min="1" required>
       </div>
 
-      <div class="button-group">
-        <button id="addEntryBtn">Add Entry</button>
-        <button id="moveDeliveredBtn" class="action-btn" onclick="moveDeliveredToHistory()">Move Delivered to History</button>
-        <button id="clearLogBtn">Clear Log</button>
+      <div class="button-group" style="display: flex; align-items: center; justify-content: center;">
+          <button id="addEntryBtn">Add Entry</button>
+          <button id="moveDeliveredBtn" class="action-btn" onclick="moveDeliveredToHistory()">Move Delivered to History</button>
+          <button id="clearLogBtn">Clear Log</button>
+          
+          <!-- Add a label for SCU -->
+          <label for="totalCargo" style="margin-left: 10px; font-size: 25px; padding-bottom: 18px;">SCU:</label>
+          <!-- Reduce the size of the text box -->
+          <input type="text" id="totalCargo" placeholder="Total Cargo" readonly style="margin-left: 2.5px; width: 40px; font-size: 20px;">
       </div>
     </div>
 
@@ -102,6 +107,7 @@
         <thead>
           <tr>
             <th>Drop-off Point</th>
+            <th>Sort</th>
             <th>Commodity</th>
             <th>Amount</th>
             <th>Actions</th>
@@ -111,6 +117,10 @@
         <tbody>
           <tr>
             <td>Drop-off Point</td>
+            <td>
+                <button onclick="sortTable('asc')">↑</button>
+                <button onclick="sortTable('desc')">↓</button>
+            </td>
             <td>Commodity</td>
             <td>
               <!-- Removed the Update Cargo text box -->
@@ -132,8 +142,16 @@
             <!-- Include your form elements here -->
             <form>
                 <!-- Your existing form elements -->
+                <div class="form-group">
+                    <label for="uniqueMissionRewardInput">Mission Reward:</label>
+                    <input type="text" id="uniqueMissionRewardInput" placeholder="Enter Mission Reward">
+                </div>
             </form>
         </div>
+    </div>
+
+    <div id="missionEntriesContainer">
+        <!-- Mission entries will be dynamically added here -->
     </div>
   </div>
 
