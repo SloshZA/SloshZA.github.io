@@ -2371,6 +2371,65 @@ function loadMissionEntries() {
 // Call loadMissionEntries when the page loads
 document.addEventListener('DOMContentLoaded', loadMissionEntries);
 
+function moveUp(button) {
+  const row = button.closest('tr'); // Get the row of the clicked button
+  const previousRow = row.previousElementSibling; // Get the previous row
+
+  if (previousRow) {
+    // Move the current row before the previous row
+    const cargoManifestBody = document.getElementById('cargoManifestBody');
+    cargoManifestBody.insertBefore(row, previousRow);
+  }
+}
+
+function moveDown(button) {
+  const row = button.closest('tr'); // Get the row of the clicked button
+  const nextRow = row.nextElementSibling; // Get the next row
+
+  if (nextRow) {
+    // Move the current row after the next row
+    const cargoManifestBody = document.getElementById('cargoManifestBody');
+    cargoManifestBody.insertBefore(nextRow, row);
+  }
+}
+
+// Add event listeners to the cargo manifest body
+const cargoManifestBody = document.getElementById('cargoManifestBody');
+cargoManifestBody.addEventListener('dragover', allowDrop);
+cargoManifestBody.addEventListener('drop', drop);
+
+function moveUp(button) {
+  const row = button.closest('tr'); // Get the row of the clicked button
+  const previousRow = row.previousElementSibling; // Get the previous row
+
+  if (previousRow) {
+    // Move the current row before the previous row
+    const cargoManifestBody = document.getElementById('cargoManifestBody');
+    cargoManifestBody.insertBefore(row, previousRow);
+  }
+}
+
+function moveDown(button) {
+  const row = button.closest('tr'); // Get the row of the clicked button
+  const nextRow = row.nextElementSibling; // Get the next row
+
+  if (nextRow) {
+    // Move the current row after the next row
+    const cargoManifestBody = document.getElementById('cargoManifestBody');
+    cargoManifestBody.insertBefore(nextRow, row);
+  }
+}
+
+function markAsDelivered(button) {
+  const row = button.closest('tr'); // Get the row of the clicked button
+  const statusCell = row.querySelector('.status'); // Find the status cell in the row
+
+  if (statusCell) {
+    statusCell.textContent = 'Cargo Delivered'; // Update the status text
+    statusCell.style.color = 'green'; // Optional: Change text color to green
+  }
+}
+
 
 
 

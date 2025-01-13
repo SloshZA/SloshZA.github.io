@@ -1679,3 +1679,18 @@ select:not(#locationType):not(#location):not(#moon) {
     border-top: 1px solid #ccc;
 }
 
+button {
+  padding: 5px 10px; /* Add padding for better appearance */
+  font-size: 14px; /* Adjust font size */
+  background-color: #4CAF50; /* Green background */
+  color: white; /* White text */
+  border: none; /* No border */
+  border-radius: 4px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor */
+  transition: background-color 0.3s; /* Smooth transition */
+}
+
+button:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+
