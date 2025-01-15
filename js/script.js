@@ -210,26 +210,368 @@ document.addEventListener('DOMContentLoaded', () => {
         // Populate with station locations
         Object.keys(data.station).forEach(station => {
             const option = document.createElement('option');
-            option.value = station;
+            option.value = `station|${station}`;
             option.textContent = station; // Use station name as the display text
             quickLookupSelect.appendChild(option);
         });
 
-        // Populate with drop-off points
+        // Populate with planet and moon locations
         Object.keys(data.planet).forEach(planet => {
             data.planet[planet].forEach(dropOffPoint => {
                 const option = document.createElement('option');
-                option.value = dropOffPoint;
-                option.textContent = dropOffPoint; // Use drop-off point name as the display text
+                option.value = `planet|${planet}|${dropOffPoint}`;
+                option.textContent = `${planet} - ${dropOffPoint}`;
                 quickLookupSelect.appendChild(option);
+            });
+        });
+
+        Object.keys(data.moon).forEach(planet => {
+            Object.keys(data.moon[planet]).forEach(moon => {
+                data.moon[planet][moon].forEach(dropOffPoint => {
+                    const option = document.createElement('option');
+                    option.value = `moon|${planet}|${moon}|${dropOffPoint}`;
+                    option.textContent = `${planet} - ${moon} - ${dropOffPoint}`;
+                    quickLookupSelect.appendChild(option);
+                });
             });
         });
     }
 
     // Call the function to populate the Quick Lookup dropdown on page load
     populateQuickLookup();
-});
 
+    // Function to handle Quick Lookup selection
+    function handleQuickLookupSelection() {
+        const quickLookupSelect = document.getElementById('quickLookup');
+        const locationTypeSelect = document.getElementById('locationType');
+        const locationSelect = document.getElementById('location');
+        const moonSelect = document.getElementById('moon');
+        const dropOffPointSelect = document.getElementById('dropOffPoint');
+
+        quickLookupSelect.addEventListener('change', () => {
+            const selectedValue = quickLookupSelect.value;
+            if (!selectedValue) return;
+
+            const [type, planet, moon, dropOffPoint] = selectedValue.split('|');
+
+            if (type === 'station') {
+                locationTypeSelect.value = 'station';
+                locationSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+                moonSelect.innerHTML = '';
+                dropOffPointSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+            } else if (type === 'planet') {
+                locationTypeSelect.value = 'planet';
+                locationSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+                moonSelect.innerHTML = '';
+                populateDropOffPoints();
+                dropOffPointSelect.value = dropOffPoint; // Select the correct drop-off point
+            } else if (type === 'moon') {
+                locationTypeSelect.value = 'planet';
+                locationSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+                moonSelect.innerHTML = `<option value="${moon}">${moon}</option>`;
+                populateDropOffPoints();
+                dropOffPointSelect.value = dropOffPoint; // Select the correct drop-off point
+            }
+        });
+    }
+
+    // Call the function to initialize the Quick Lookup functionality
+    handleQuickLookupSelection();
+
+    // Function to populate locations based on type
+    function populateLocations() {
+        const selectedType = locationTypeSelect.value;
+        const moonGroup = document.querySelector('.form-group:nth-child(3)'); // Moon dropdown
+        const dropOffGroup = document.querySelector('.form-group:nth-child(4)'); // Drop-off point dropdown
+        
+        // Preserve existing options
+        const existingOptions = Array.from(locationSelect.options).map(option => option.value);
+
+        // Add default option with appropriate text if not already present
+        if (!existingOptions.includes('')) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = selectedType === 'station' ? '-- Select Station --' : '-- Select Planet --';
+            defaultOption.disabled = true; // Make default option unclickable
+            defaultOption.selected = true; // Set as selected
+            locationSelect.appendChild(defaultOption);
+        }
+        
+        // Show/hide moon and drop-off point based on location type
+        if (selectedType === 'station') {
+            moonGroup.style.display = 'none';
+            dropOffGroup.style.display = 'none';
+            
+            // Add original stations if not already present
+            const originalStations = [
+                { value: 'Port Olisar', text: 'Port Olisar' },
+                { value: 'Port Tressler', text: 'Port Tressler' },
+                { value: 'Grim HEX', text: 'Grim HEX' },
+                { value: 'Everus Harbor', text: 'Everus Harbor' }
+            ];
+
+            originalStations.forEach(station => {
+                if (!existingOptions.includes(station.value)) {
+                    const option = document.createElement('option');
+                    option.value = station.value;
+                    option.textContent = station.text;
+                    locationSelect.appendChild(option);
+                }
+            });
+
+            // Add Lagrange stations if not already present
+            const lagrangeStations = [
+                { value: 'ARC-L1', text: 'ARC-L1 Wide Forest Station' },
+                { value: 'CRU-L1', text: 'CRU-L1 Ambitious Dream Station' },
+                { value: 'CRU-L4', text: 'CRU-L4 Shallow Fields Station' },
+                { value: 'CRU-L5', text: 'CRU-L5 Beautiful Glen Station' },
+                { value: 'HUR-L1', text: 'HUR-L1 Green Glade Station' },
+                { value: 'HUR-L2', text: 'HUR-L2 Faithful Dream Station' },
+                { value: 'HUR-L3', text: 'HUR-L3 Thundering Express Station' },
+                { value: 'HUR-L4', text: 'HUR-L4 Melodic Fields Station' },
+                { value: 'HUR-L5', text: 'HUR-L5 High Course Station' },
+                { value: 'MIC-L1', text: 'MIC-L1 Shallow Frontier Station' }
+            ];
+
+            let lastPrefix = '';
+
+            lagrangeStations.forEach(station => {
+                const prefix = station.value.substring(0, 3); // Get the first three letters
+
+                // Add separator if the prefix has changed
+                if (prefix !== lastPrefix && !existingOptions.includes('------')) {
+                    const separator = document.createElement('option');
+                    separator.value = '';
+                    separator.textContent = '------';
+                    locationSelect.appendChild(separator);
+                    lastPrefix = prefix; // Update the last prefix
+                }
+
+                if (!existingOptions.includes(station.value)) {
+                    const option = document.createElement('option');
+                    option.value = station.value;
+                    option.textContent = station.text;
+                    locationSelect.appendChild(option);
+                }
+            });
+        } else if (selectedType === 'planet') {
+            moonGroup.style.display = 'flex'; // Show moon dropdown
+            dropOffGroup.style.display = 'flex'; // Show drop-off point dropdown
+
+            // Populate with planets if not already present
+            const planets = Object.keys(data.planet);
+            planets.forEach(planet => {
+                if (!existingOptions.includes(planet)) {
+                    const option = document.createElement('option');
+                    option.value = planet;
+                    option.textContent = planet;
+                    locationSelect.appendChild(option);
+                }
+            });
+        }
+
+        // Reset the drop-off point and commodities
+        populateDropOffPoints();
+        populateCommodities();
+    }
+
+    // Function to populate drop-off points based on the selected location
+    function populateDropOffPoints() {
+        try {
+            const selectedLocation = locationSelect.value;
+            const selectedMoon = moonSelect.value;
+            const selectedType = locationTypeSelect.value;
+
+            // Preserve existing options
+            const existingOptions = Array.from(dropOffPointSelect.options).map(option => option.value);
+
+            // Add default option with new text if not already present
+            if (!existingOptions.includes('')) {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- Select Drop-off Point --';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                dropOffPointSelect.appendChild(defaultOption);
+            }
+
+            // Add event listener to hide the default option when interacting with the dropdown
+            dropOffPointSelect.addEventListener('focus', () => {
+                defaultOption.style.display = 'none'; // Hide the default option
+            });
+
+            // Case 1: Planet selected with no moon - show planet facilities
+            if (selectedType === 'planet' && selectedLocation && !selectedMoon) {
+                const dropOffPoints = data.planet[selectedLocation] || [];
+                
+                // Check if ArcCorp is selected
+                if (selectedLocation === 'ArcCorp' && !existingOptions.includes('City')) {
+                    // Add the City option above Area 18
+                    const cityOption = document.createElement('option');
+                    cityOption.value = 'City';
+                    cityOption.textContent = '-- City --';
+                    cityOption.disabled = true; // Make City option unclickable
+                    dropOffPointSelect.appendChild(cityOption); // Add City option
+
+                    // Add Area 18 after City
+                    dropOffPoints.forEach(point => {
+                        if (point === 'Area 18' && !existingOptions.includes(point)) {
+                            const option = document.createElement('option');
+                            option.value = point;
+                            option.textContent = point;
+                            dropOffPointSelect.appendChild(option);
+                        }
+                    });
+                }
+
+                // Check if Crusader is selected
+                if (selectedLocation === 'Crusader' && !existingOptions.includes('City')) {
+                    // Add the City option above Orison
+                    const cityOption = document.createElement('option');
+                    cityOption.value = 'City';
+                    cityOption.textContent = '-- City --';
+                    cityOption.disabled = true; // Make City option unclickable
+                    dropOffPointSelect.appendChild(cityOption); // Add City option
+
+                    // Add Orison after City
+                    dropOffPoints.forEach(point => {
+                        if (point === 'Orison' && !existingOptions.includes(point)) {
+                            const option = document.createElement('option');
+                            option.value = point;
+                            option.textContent = point;
+                            dropOffPointSelect.appendChild(option);
+                        }
+                    });
+                }
+
+                // Check if Hurston is selected
+                if (selectedLocation === 'Hurston' && !existingOptions.includes('City')) {
+                    // Add the City option above Lorville
+                    const cityOption = document.createElement('option');
+                    cityOption.value = 'City';
+                    cityOption.textContent = '-- City --';
+                    cityOption.disabled = true; // Make City option unclickable
+                    dropOffPointSelect.appendChild(cityOption); // Add City option
+
+                    // Add Lorville after City
+                    dropOffPoints.forEach(point => {
+                        if (point === 'Lorville' && !existingOptions.includes(point)) {
+                            const option = document.createElement('option');
+                            option.value = point;
+                            option.textContent = point;
+                            dropOffPointSelect.appendChild(option);
+                        }
+                    });
+
+                    // Add the unclickable Distribution Centers option below Lorville
+                    if (!existingOptions.includes('Distribution Centers')) {
+                        const distributionCentersOption = document.createElement('option');
+                        distributionCentersOption.value = 'Distribution Centers';
+                        distributionCentersOption.textContent = '-- Distribution Centers --';
+                        distributionCentersOption.disabled = true; // Make Distribution Centers option unclickable
+                        dropOffPointSelect.appendChild(distributionCentersOption); // Add Distribution Centers option
+                    }
+                }
+
+                dropOffPoints.forEach(point => {
+                    if (!existingOptions.includes(point) && point !== 'Area 18' && point !== 'Orison' && point !== 'Lorville') { // Skip adding Area 18, Orison, and Lorville again
+                        const option = document.createElement('option');
+                        option.value = point;
+                        option.textContent = point;
+                        dropOffPointSelect.appendChild(option);
+                    }
+                });
+
+                // Ensure the correct drop-off point is selected
+                if (dropOffPoints.length > 0) {
+                    dropOffPointSelect.value = dropOffPoints[0];
+                }
+                return;
+            }
+
+            // Case 2: Planet and moon selected - show moon facilities
+            if (selectedType === 'planet' && selectedLocation && selectedMoon) {
+                // Add the moon name header if not already present
+                if (!existingOptions.includes(`${selectedMoon} Facilities`)) {
+                    const moonHeader = document.createElement('option');
+                    moonHeader.value = '';
+                    moonHeader.textContent = `${selectedMoon} Facilities`;
+                    moonHeader.disabled = true;
+                    dropOffPointSelect.appendChild(moonHeader);
+                }
+
+                // Get moon facilities from data structure
+                const moonFacilities = data.moon[selectedLocation][selectedMoon] || [];
+                moonFacilities.forEach(facility => {
+                    if (!existingOptions.includes(facility)) {
+                        const option = document.createElement('option');
+                        option.value = facility;
+                        option.textContent = facility;
+                        dropOffPointSelect.appendChild(option);
+                    }
+                });
+
+                // Ensure the correct drop-off point is selected
+                if (moonFacilities.length > 0) {
+                    dropOffPointSelect.value = moonFacilities[0];
+                }
+                return; // Exit after adding moon facilities
+            }
+
+            // Case 3: Station selected
+            if (selectedType === 'station') {
+                return;
+            }
+
+            // Case 4: Hurston selected - ensure Lorville is at the top
+            if (selectedType === 'planet' && selectedLocation === 'Hurston' && !existingOptions.includes('Lorville')) {
+                const lorvilleOption = document.createElement('option');
+                lorvilleOption.value = 'Lorville';
+                lorvilleOption.textContent = 'Lorville';
+                dropOffPointSelect.appendChild(lorvilleOption); // Add Lorville first
+            }
+
+            // Populate drop-off points for Hurston
+            const dropOffPoints = data.planet[selectedLocation] || [];
+            dropOffPoints.forEach(point => {
+                if (!existingOptions.includes(point) && point !== 'Lorville') { // Skip adding Lorville again
+                    const option = document.createElement('option');
+                    option.value = point;
+                    option.textContent = point;
+                    dropOffPointSelect.appendChild(option);
+                }
+            });
+
+            // Ensure the correct drop-off point is selected
+            if (dropOffPoints.length > 0) {
+                dropOffPointSelect.value = dropOffPoints[0];
+            }
+
+            // Note: Ensure that no sorting is applied to the drop-off points
+            // The order of drop-off points is maintained as defined in the data structure.
+
+        } catch (error) {
+            console.error('Error in populateDropOffPoints:', error);
+            if (dropOffPointSelect) {
+                dropOffPointSelect.innerHTML = '<option value="">Select a location first</option>';
+            }
+        }
+    }
+
+    // Initialize the page
+    populateLocations();
+    populateCommodities();
+    updateResultTable();
+
+    // Event listeners
+    locationTypeSelect.addEventListener('change', populateLocations);
+    locationSelect.addEventListener('change', () => {
+        populateMoons();
+        populateDropOffPoints();
+    });
+    addEntryBtn.addEventListener('click', addEntry);
+    clearLogBtn.addEventListener('click', handleClearLog);
+});
 
 // Function to update the history table
 function updateHistoryTable() {
@@ -503,22 +845,25 @@ function populateLocations() {
   const moonGroup = document.querySelector('.form-group:nth-child(3)'); // Moon dropdown
   const dropOffGroup = document.querySelector('.form-group:nth-child(4)'); // Drop-off point dropdown
   
-  locationSelect.innerHTML = ''; // Clear previous options
-  
-  // Add default option with appropriate text
-  const defaultOption = document.createElement('option');
-  defaultOption.value = '';
-  defaultOption.textContent = selectedType === 'station' ? '-- Select Station --' : '-- Select Planet --';
-  defaultOption.disabled = true; // Make default option unclickable
-  defaultOption.selected = true; // Set as selected
-  locationSelect.appendChild(defaultOption);
+  // Preserve existing options
+  const existingOptions = Array.from(locationSelect.options).map(option => option.value);
+
+  // Add default option with appropriate text if not already present
+  if (!existingOptions.includes('')) {
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = selectedType === 'station' ? '-- Select Station --' : '-- Select Planet --';
+    defaultOption.disabled = true; // Make default option unclickable
+    defaultOption.selected = true; // Set as selected
+    locationSelect.appendChild(defaultOption);
+  }
   
   // Show/hide moon and drop-off point based on location type
   if (selectedType === 'station') {
     moonGroup.style.display = 'none';
     dropOffGroup.style.display = 'none';
     
-    // Add original stations
+    // Add original stations if not already present
     const originalStations = [
       { value: 'Port Olisar', text: 'Port Olisar' },
       { value: 'Port Tressler', text: 'Port Tressler' },
@@ -527,13 +872,15 @@ function populateLocations() {
     ];
 
     originalStations.forEach(station => {
-      const option = document.createElement('option');
-      option.value = station.value;
-      option.textContent = station.text;
-      locationSelect.appendChild(option);
+      if (!existingOptions.includes(station.value)) {
+        const option = document.createElement('option');
+        option.value = station.value;
+        option.textContent = station.text;
+        locationSelect.appendChild(option);
+      }
     });
 
-    // Add Lagrange stations
+    // Add Lagrange stations if not already present
     const lagrangeStations = [
       { value: 'ARC-L1', text: 'ARC-L1 Wide Forest Station' },
       { value: 'CRU-L1', text: 'CRU-L1 Ambitious Dream Station' },
@@ -553,7 +900,7 @@ function populateLocations() {
       const prefix = station.value.substring(0, 3); // Get the first three letters
 
       // Add separator if the prefix has changed
-      if (prefix !== lastPrefix) {
+      if (prefix !== lastPrefix && !existingOptions.includes('------')) {
         const separator = document.createElement('option');
         separator.value = '';
         separator.textContent = '------';
@@ -561,22 +908,26 @@ function populateLocations() {
         lastPrefix = prefix; // Update the last prefix
       }
 
-      const option = document.createElement('option');
-      option.value = station.value;
-      option.textContent = station.text;
-      locationSelect.appendChild(option);
+      if (!existingOptions.includes(station.value)) {
+        const option = document.createElement('option');
+        option.value = station.value;
+        option.textContent = station.text;
+        locationSelect.appendChild(option);
+      }
     });
   } else if (selectedType === 'planet') {
     moonGroup.style.display = 'flex'; // Show moon dropdown
     dropOffGroup.style.display = 'flex'; // Show drop-off point dropdown
 
-    // Populate with planets
+    // Populate with planets if not already present
     const planets = Object.keys(data.planet);
     planets.forEach(planet => {
-      const option = document.createElement('option');
-      option.value = planet;
-      option.textContent = planet;
-      locationSelect.appendChild(option);
+      if (!existingOptions.includes(planet)) {
+        const option = document.createElement('option');
+        option.value = planet;
+        option.textContent = planet;
+        locationSelect.appendChild(option);
+      }
     });
   }
 
@@ -592,15 +943,18 @@ function populateDropOffPoints() {
     const selectedMoon = moonSelect.value;
     const selectedType = locationTypeSelect.value;
 
-    dropOffPointSelect.innerHTML = ''; // Clear previous options
+    // Preserve existing options
+    const existingOptions = Array.from(dropOffPointSelect.options).map(option => option.value);
 
-    // Add default option with new text
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = '-- Select Drop-off Point --';
-    defaultOption.disabled = true;
-    defaultOption.selected = true;
-    dropOffPointSelect.appendChild(defaultOption);
+    // Add default option with new text if not already present
+    if (!existingOptions.includes('')) {
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- Select Drop-off Point --';
+      defaultOption.disabled = true;
+      defaultOption.selected = true;
+      dropOffPointSelect.appendChild(defaultOption);
+    }
 
     // Add event listener to hide the default option when interacting with the dropdown
     dropOffPointSelect.addEventListener('focus', () => {
@@ -612,7 +966,7 @@ function populateDropOffPoints() {
       const dropOffPoints = data.planet[selectedLocation] || [];
       
       // Check if ArcCorp is selected
-      if (selectedLocation === 'ArcCorp') {
+      if (selectedLocation === 'ArcCorp' && !existingOptions.includes('City')) {
         // Add the City option above Area 18
         const cityOption = document.createElement('option');
         cityOption.value = 'City';
@@ -622,7 +976,7 @@ function populateDropOffPoints() {
 
         // Add Area 18 after City
         dropOffPoints.forEach(point => {
-          if (point === 'Area 18') {
+          if (point === 'Area 18' && !existingOptions.includes(point)) {
             const option = document.createElement('option');
             option.value = point;
             option.textContent = point;
@@ -632,7 +986,7 @@ function populateDropOffPoints() {
       }
 
       // Check if Crusader is selected
-      if (selectedLocation === 'Crusader') {
+      if (selectedLocation === 'Crusader' && !existingOptions.includes('City')) {
         // Add the City option above Orison
         const cityOption = document.createElement('option');
         cityOption.value = 'City';
@@ -642,7 +996,7 @@ function populateDropOffPoints() {
 
         // Add Orison after City
         dropOffPoints.forEach(point => {
-          if (point === 'Orison') {
+          if (point === 'Orison' && !existingOptions.includes(point)) {
             const option = document.createElement('option');
             option.value = point;
             option.textContent = point;
@@ -652,7 +1006,7 @@ function populateDropOffPoints() {
       }
 
       // Check if Hurston is selected
-      if (selectedLocation === 'Hurston') {
+      if (selectedLocation === 'Hurston' && !existingOptions.includes('City')) {
         // Add the City option above Lorville
         const cityOption = document.createElement('option');
         cityOption.value = 'City';
@@ -662,7 +1016,7 @@ function populateDropOffPoints() {
 
         // Add Lorville after City
         dropOffPoints.forEach(point => {
-          if (point === 'Lorville') {
+          if (point === 'Lorville' && !existingOptions.includes(point)) {
             const option = document.createElement('option');
             option.value = point;
             option.textContent = point;
@@ -671,52 +1025,67 @@ function populateDropOffPoints() {
         });
 
         // Add the unclickable Distribution Centers option below Lorville
-        const distributionCentersOption = document.createElement('option');
-        distributionCentersOption.value = 'Distribution Centers';
-        distributionCentersOption.textContent = '-- Distribution Centers --';
-        distributionCentersOption.disabled = true; // Make Distribution Centers option unclickable
-        dropOffPointSelect.appendChild(distributionCentersOption); // Add Distribution Centers option
+        if (!existingOptions.includes('Distribution Centers')) {
+          const distributionCentersOption = document.createElement('option');
+          distributionCentersOption.value = 'Distribution Centers';
+          distributionCentersOption.textContent = '-- Distribution Centers --';
+          distributionCentersOption.disabled = true; // Make Distribution Centers option unclickable
+          dropOffPointSelect.appendChild(distributionCentersOption); // Add Distribution Centers option
+        }
       }
 
       dropOffPoints.forEach(point => {
-        if (point !== 'Area 18' && point !== 'Orison' && point !== 'Lorville') { // Skip adding Area 18, Orison, and Lorville again
+        if (!existingOptions.includes(point) && point !== 'Area 18' && point !== 'Orison' && point !== 'Lorville') { // Skip adding Area 18, Orison, and Lorville again
           const option = document.createElement('option');
           option.value = point;
           option.textContent = point;
           dropOffPointSelect.appendChild(option);
         }
       });
+
+      // Ensure the correct drop-off point is selected
+      if (dropOffPoints.length > 0) {
+        dropOffPointSelect.value = dropOffPoints[0];
+      }
       return;
     }
 
     // Case 2: Planet and moon selected - show moon facilities
     if (selectedType === 'planet' && selectedLocation && selectedMoon) {
-      // Add the moon name header
-      const moonHeader = document.createElement('option');
-      moonHeader.value = '';
-      moonHeader.textContent = `${selectedMoon} Facilities`;
-      moonHeader.disabled = true;
-      dropOffPointSelect.appendChild(moonHeader);
+      // Add the moon name header if not already present
+      if (!existingOptions.includes(`${selectedMoon} Facilities`)) {
+        const moonHeader = document.createElement('option');
+        moonHeader.value = '';
+        moonHeader.textContent = `${selectedMoon} Facilities`;
+        moonHeader.disabled = true;
+        dropOffPointSelect.appendChild(moonHeader);
+      }
 
       // Get moon facilities from data structure
       const moonFacilities = data.moon[selectedLocation][selectedMoon] || [];
       moonFacilities.forEach(facility => {
-        const option = document.createElement('option');
-        option.value = facility;
-        option.textContent = facility;
-        dropOffPointSelect.appendChild(option);
+        if (!existingOptions.includes(facility)) {
+          const option = document.createElement('option');
+          option.value = facility;
+          option.textContent = facility;
+          dropOffPointSelect.appendChild(option);
+        }
       });
+
+      // Ensure the correct drop-off point is selected
+      if (moonFacilities.length > 0) {
+        dropOffPointSelect.value = moonFacilities[0];
+      }
       return; // Exit after adding moon facilities
     }
 
     // Case 3: Station selected
     if (selectedType === 'station') {
-      dropOffPointSelect.innerHTML = '';
       return;
     }
 
     // Case 4: Hurston selected - ensure Lorville is at the top
-    if (selectedType === 'planet' && selectedLocation === 'Hurston') {
+    if (selectedType === 'planet' && selectedLocation === 'Hurston' && !existingOptions.includes('Lorville')) {
       const lorvilleOption = document.createElement('option');
       lorvilleOption.value = 'Lorville';
       lorvilleOption.textContent = 'Lorville';
@@ -726,13 +1095,18 @@ function populateDropOffPoints() {
     // Populate drop-off points for Hurston
     const dropOffPoints = data.planet[selectedLocation] || [];
     dropOffPoints.forEach(point => {
-      if (point !== 'Lorville') { // Skip adding Lorville again
+      if (!existingOptions.includes(point) && point !== 'Lorville') { // Skip adding Lorville again
         const option = document.createElement('option');
         option.value = point;
         option.textContent = point;
         dropOffPointSelect.appendChild(option);
       }
     });
+
+    // Ensure the correct drop-off point is selected
+    if (dropOffPoints.length > 0) {
+      dropOffPointSelect.value = dropOffPoints[0];
+    }
 
     // Note: Ensure that no sorting is applied to the drop-off points
     // The order of drop-off points is maintained as defined in the data structure.
@@ -2078,18 +2452,29 @@ function populateQuickLookup() {
     // Populate with station locations
     Object.keys(data.station).forEach(station => {
         const option = document.createElement('option');
-        option.value = station;
+        option.value = `station|${station}`;
         option.textContent = station; // Use station name as the display text
         quickLookupSelect.appendChild(option);
     });
 
-    // Populate with drop-off points
+    // Populate with planet and moon locations
     Object.keys(data.planet).forEach(planet => {
         data.planet[planet].forEach(dropOffPoint => {
             const option = document.createElement('option');
-            option.value = dropOffPoint;
-            option.textContent = dropOffPoint; // Use drop-off point name as the display text
+            option.value = `planet|${planet}|${dropOffPoint}`;
+            option.textContent = `${planet} - ${dropOffPoint}`;
             quickLookupSelect.appendChild(option);
+        });
+    });
+
+    Object.keys(data.moon).forEach(planet => {
+        Object.keys(data.moon[planet]).forEach(moon => {
+            data.moon[planet][moon].forEach(dropOffPoint => {
+                const option = document.createElement('option');
+                option.value = `moon|${planet}|${moon}|${dropOffPoint}`;
+                option.textContent = `${planet} - ${moon} - ${dropOffPoint}`;
+                quickLookupSelect.appendChild(option);
+            });
         });
     });
 }
@@ -2104,26 +2489,34 @@ function handleQuickLookupSelection() {
     const quickLookupSelect = document.getElementById('quickLookup');
     const locationTypeSelect = document.getElementById('locationType');
     const locationSelect = document.getElementById('location');
+    const moonSelect = document.getElementById('moon');
     const dropOffPointSelect = document.getElementById('dropOffPoint');
 
     quickLookupSelect.addEventListener('change', () => {
         const selectedValue = quickLookupSelect.value;
+        if (!selectedValue) return;
 
-        // Logic to match the selected value with the dropdowns
-        if (selectedValue) {
-            // Example logic to set the location type and location based on the selected value
-            if (data.station[selectedValue]) {
-                locationTypeSelect.value = 'station';
-                locationSelect.value = selectedValue; // Set the location to the selected station
-                populateDropOffPoints(); // Populate drop-off points based on the selected station
-            } else if (data.planet[selectedValue]) {
-                locationTypeSelect.value = 'planet';
-                locationSelect.value = selectedValue; // Set the location to the selected planet
-                populateDropOffPoints(); // Populate drop-off points based on the selected planet
-            } else {
-                // If it's a drop-off point, set the drop-off point directly
-                dropOffPointSelect.value = selectedValue;
-            }
+        const [type, planet, moon, dropOffPoint] = selectedValue.split('|');
+
+        if (type === 'station') {
+            locationTypeSelect.value = 'station';
+            locationSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+            moonSelect.innerHTML = '';
+            dropOffPointSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+        } else if (type === 'planet') {
+            locationTypeSelect.value = 'planet';
+            locationSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+            moonSelect.innerHTML = '';
+            dropOffPointSelect.innerHTML = ''; // Clear previous options
+            populateDropOffPoints();
+            dropOffPointSelect.value = dropOffPoint; // Select the correct drop-off point
+        } else if (type === 'moon') {
+            locationTypeSelect.value = 'planet';
+            locationSelect.innerHTML = `<option value="${planet}">${planet}</option>`;
+            moonSelect.innerHTML = `<option value="${moon}">${moon}</option>`;
+            dropOffPointSelect.innerHTML = ''; // Clear previous options
+            populateDropOffPoints();
+            dropOffPointSelect.value = dropOffPoint; // Select the correct drop-off point
         }
     });
 }
