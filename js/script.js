@@ -22,7 +22,11 @@ const data = {
       'Greycat Stanton IV Production Complex-A',
       'Sakura Sun Goldenrod Workcenter',
       'microTech Logistics Depot S4LD01',
-      'microTech Logistics Depot S4LD13'
+      'microTech Logistics Depot S4LD13',
+      'Shubin Mining Facility SM0-10', // New drop-off point
+      'Shubin Mining Facility SM0-13', // New drop-off point
+      'Shubin Mining Facility SM0-18', // New drop-off point
+      'Shubin Mining Facility SM0-22'  // New drop-off point
     ],
   },
   station: {
@@ -125,7 +129,12 @@ const data = {
     'Stims',
     'Tin',
     'Titanium',
-    'Tungsten'
+    'Tungsten',
+    'Hydrogen Fuel',      // New commodity
+    'Quantum Fuel',       // New commodity
+    'Ship Ammunition',    // New commodity
+    'Scrap',              // New commodity
+    'Waste'               // New commodity
   ]
 };
 
@@ -2428,6 +2437,45 @@ function markAsDelivered(button) {
     statusCell.textContent = 'Cargo Delivered'; // Update the status text
     statusCell.style.color = 'green'; // Optional: Change text color to green
   }
+}
+
+function addEntryToCargoManifest() {
+    const startingLocation = document.getElementById('startingLocation').value; // Get the selected starting location
+    const dropOffPoint = document.getElementById('dropOffPoint').value; // Get the selected drop-off point
+    const commodity = document.getElementById('commodity').value; // Get the selected commodity
+    const amount = document.getElementById('amount').value; // Get the amount
+
+    // Check if all fields are filled
+    if (!startingLocation || !dropOffPoint || !commodity || !amount) {
+        alert('Please fill in all fields.');
+        return;
+    }
+
+    const cargoManifestBody = document.getElementById('cargoManifestBody');
+
+    // Create a new row for the cargo manifest
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>${dropOffPoint}</td>
+        <td>${startingLocation}</td> <!-- Display starting location here -->
+        <td>${commodity}</td>
+        <td>${amount}</td>
+        <td>
+            <button class="action-btn update-btn" onclick="updateCargo(this)">Update Cargo</button>
+            <button class="action-btn remove-btn" onclick="removeCargo(this)">Remove Cargo</button>
+            <button class="action-btn delivered-btn" onclick="markAsDelivered(this)">Cargo Delivered</button>
+        </td>
+        <td class="status">Pending</td>
+    `;
+
+    // Append the new row to the cargo manifest table
+    cargoManifestBody.appendChild(newRow);
+
+    // Clear the input fields after adding the entry
+    document.getElementById('amount').value = '';
+    document.getElementById('dropOffPoint').value = '';
+    document.getElementById('commodity').value = '';
+    document.getElementById('startingLocation').value = ''; // Clear starting location
 }
 
 
