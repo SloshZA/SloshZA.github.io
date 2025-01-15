@@ -199,7 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to populate the Quick Lookup dropdown
     function populateQuickLookup() {
         const quickLookupSelect = document.getElementById('quickLookup');
+        const startingLocationSelect = document.getElementById('startingLocation');
         quickLookupSelect.innerHTML = ''; // Clear previous options
+        startingLocationSelect.innerHTML = ''; // Clear previous options
 
         // Add default option
         const defaultOption = document.createElement('option');
@@ -207,12 +209,22 @@ document.addEventListener('DOMContentLoaded', () => {
         defaultOption.textContent = 'Select an option';
         quickLookupSelect.appendChild(defaultOption);
 
+        const defaultStartingOption = document.createElement('option');
+        defaultStartingOption.value = '';
+        defaultStartingOption.textContent = 'Select a starting location';
+        startingLocationSelect.appendChild(defaultStartingOption);
+
         // Populate with station locations
         Object.keys(data.station).forEach(station => {
             const option = document.createElement('option');
             option.value = `station|${station}`;
             option.textContent = station; // Use station name as the display text
             quickLookupSelect.appendChild(option);
+
+            const startingOption = document.createElement('option');
+            startingOption.value = station;
+            startingOption.textContent = station;
+            startingLocationSelect.appendChild(startingOption);
         });
 
         // Populate with planet and moon locations
@@ -222,6 +234,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.value = `planet|${planet}|${dropOffPoint}`;
                 option.textContent = dropOffPoint; // Use drop-off point as the display text
                 quickLookupSelect.appendChild(option);
+
+                const startingOption = document.createElement('option');
+                startingOption.value = dropOffPoint;
+                startingOption.textContent = dropOffPoint;
+                startingLocationSelect.appendChild(startingOption);
             });
         });
 
@@ -232,6 +249,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     option.value = `moon|${planet}|${moon}|${dropOffPoint}`;
                     option.textContent = dropOffPoint; // Use drop-off point as the display text
                     quickLookupSelect.appendChild(option);
+
+                    const startingOption = document.createElement('option');
+                    startingOption.value = dropOffPoint;
+                    startingOption.textContent = dropOffPoint;
+                    startingLocationSelect.appendChild(startingOption);
                 });
             });
         });
@@ -286,9 +308,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (type === 'station') {
                 locationTypeSelect.value = 'station';
-                locationSelect.value = planet;
+                locationSelect.innerHTML = ''; // Clear existing options
+                Object.keys(data.station).forEach(station => {
+                    const option = document.createElement('option');
+                    option.value = station;
+                    option.textContent = station;
+                    locationSelect.appendChild(option);
+                });
+                locationSelect.value = planet === 'Everus Harbor' ? 'Everus Harbor' : planet; // Set location to the selected station
                 moonSelect.value = '';
-                dropOffPointSelect.value = moonOrDropOffPoint;
+                dropOffPointSelect.value = dropOffPoint;
             } else {
                 locationTypeSelect.value = 'planet';
                 locationSelect.value = planet;
@@ -2099,6 +2128,7 @@ function addEntry() {
     const dropOffPoint = locationTypeSelect.value === 'station' ? location : dropOffPointSelect.value;
     const commodity = commoditySelect.value;
     const amount = amountInput.value;
+    const startingLocation = document.getElementById('startingLocation').value; // Get the selected starting location
 
     if (!location || !commodity || !amount) {
         showNotification('Please fill all fields');
@@ -2120,7 +2150,8 @@ function addEntry() {
         commodity,
         originalAmount: amount,
         currentAmount: amount,
-        status: 'Pending'
+        status: 'Pending',
+        startingLocation // Include starting location in the entry
     };
 
     cargoEntries.push(newEntry);
@@ -2187,84 +2218,84 @@ async function updateCargo(id) {
 
 // Update the result table to reflect the latest cargo entries
 function updateResultTable() {
-  let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
+    let cargoEntries = JSON.parse(localStorage.getItem('cargoEntries')) || [];
 
-  // Clear the table first but keep the title
-  const manifestTitle = document.getElementById('cargoManifestTitle');
-  const table = document.createElement('table');
+    // Clear the table first but keep the title
+    const manifestTitle = document.getElementById('cargoManifestTitle');
+    const table = document.createElement('table');
 
-  // Table header row
-  const headerRow = document.createElement('tr');
-  headerRow.innerHTML = `
-    <th>Drop-off Point</th>
-    <th>Commodity</th>
-    <th>Amount Delivered</th>
-    <th>Actions</th>
-    <th>Status</th>
-  `;
-  table.appendChild(headerRow);
-
-  // Group entries by drop-off point
-  const groupedEntries = groupByDropOffPoint(cargoEntries);
-
-  Object.keys(groupedEntries).forEach(dropOffPoint => {
-    const entries = groupedEntries[dropOffPoint];
-    const firstEntry = entries[0];
-    
-    // Format location string
-    const locationInfo = firstEntry.moon 
-      ? ` (${firstEntry.location} - ${firstEntry.moon})`
-      : ` (${firstEntry.location})`;
-
-    // Create a new row for the drop-off point
-    const dropOffRow = document.createElement('tr');
-    dropOffRow.classList.add('drop-off-header');
-    
-    // Create the button with consistent text
-    dropOffRow.innerHTML = `
-      <td colspan="4" style="font-weight: bold; cursor: pointer;">
-        ${dropOffPoint}<span style="font-size: 0.6em; color: #999;">${locationInfo}</span>
-      </td>
-      <td>
-        <button class="action-btn" onclick="markDelivered('${dropOffPoint}')">Cargo Delivered</button>
-      </td>
+    // Table header row
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = `
+        <th>Drop-off Point</th>
+        <th>Commodity</th>
+        <th>Amount Delivered</th>
+        <th>Actions</th>
+        <th>Status</th>
     `;
-    table.appendChild(dropOffRow);
+    table.appendChild(headerRow);
 
-    // Create container for commodity rows
-    const commodityRows = document.createElement('tbody');
-    commodityRows.classList.add('commodity-rows');
-    commodityRows.setAttribute('data-drop-off', dropOffPoint); // Set data attribute for identification
-    
-    // Add each commodity for the current drop-off point as individual rows
-    entries.forEach(({ id, commodity, originalAmount, currentAmount, status }) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td></td> <!-- Empty cell for drop-off point -->
-        <td>${commodity}</td>
-        <td>${currentAmount}/${originalAmount}</td>
-        <td class="action-cell">
-          <input type="number" id="updateAmount_${id}" value="${currentAmount}" />
-          <button class="action-btn update-btn" onclick="updateCargoClick('${id}')">Update Cargo</button>
-          <button class="action-btn remove-btn" onclick="removeCargo('${id}')">Remove Cargo</button>
-        </td>
-        <td>${status}</td>
-      `;
-      commodityRows.appendChild(row);
+    // Group entries by drop-off point
+    const groupedEntries = groupByDropOffPoint(cargoEntries);
+
+    Object.keys(groupedEntries).forEach(dropOffPoint => {
+        const entries = groupedEntries[dropOffPoint];
+        const firstEntry = entries[0];
+        
+        // Format location string
+        const locationInfo = firstEntry.moon 
+            ? ` (${firstEntry.location} - ${firstEntry.moon})`
+            : ` (${firstEntry.location})`;
+
+        // Create a new row for the drop-off point
+        const dropOffRow = document.createElement('tr');
+        dropOffRow.classList.add('drop-off-header');
+        
+        // Create the button with consistent text
+        dropOffRow.innerHTML = `
+            <td colspan="4" style="font-weight: bold; cursor: pointer;">
+                ${dropOffPoint}<span style="font-size: 0.6em; color: #999;">${locationInfo}</span>
+            </td>
+            <td>
+                <button class="action-btn" onclick="markDelivered('${dropOffPoint}')">Cargo Delivered</button>
+            </td>
+        `;
+        table.appendChild(dropOffRow);
+
+        // Create container for commodity rows
+        const commodityRows = document.createElement('tbody');
+        commodityRows.classList.add('commodity-rows');
+        commodityRows.setAttribute('data-drop-off', dropOffPoint); // Set data attribute for identification
+        
+        // Add each commodity for the current drop-off point as individual rows
+        entries.forEach(({ id, commodity, originalAmount, currentAmount, status, startingLocation }) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span style="font-size: 0.5em;">Pickup from: ${startingLocation}</span></td> <!-- Add "Pickup from:" and reduce size -->
+                <td>${commodity}</td>
+                <td>${currentAmount}/${originalAmount}</td>
+                <td class="action-cell">
+                    <input type="number" id="updateAmount_${id}" value="${currentAmount}" />
+                    <button class="action-btn update-btn" onclick="updateCargoClick('${id}')">Update Cargo</button>
+                    <button class="action-btn remove-btn" onclick="removeCargo('${id}')">Remove Cargo</button>
+                </td>
+                <td>${status}</td>
+            `;
+            commodityRows.appendChild(row);
+        });
+
+        table.appendChild(commodityRows);
+        // Add click event to toggle visibility
+        dropOffRow.querySelector('td').addEventListener('click', () => {
+            const isExpanded = commodityRows.style.display !== 'none';
+            commodityRows.style.display = isExpanded ? 'none' : '';
+            dropOffRow.querySelector('td').setAttribute('aria-expanded', !isExpanded);
+        });
     });
 
-    table.appendChild(commodityRows);
-    // Add click event to toggle visibility
-    dropOffRow.querySelector('td').addEventListener('click', () => {
-      const isExpanded = commodityRows.style.display !== 'none';
-      commodityRows.style.display = isExpanded ? 'none' : '';
-      dropOffRow.querySelector('td').setAttribute('aria-expanded', !isExpanded);
-    });
-  });
-
-  // Append the table to the result section
-  resultTable.innerHTML = ''; // Clear existing table
-  resultTable.appendChild(table);
+    // Append the table to the result section
+    resultTable.innerHTML = ''; // Clear existing table
+    resultTable.appendChild(table);
 }
 
 // Function to group entries by drop-off point
@@ -2558,7 +2589,9 @@ updateTotalValue();
 // Function to populate the Quick Lookup dropdown
 function populateQuickLookup() {
     const quickLookupSelect = document.getElementById('quickLookup');
+    const startingLocationSelect = document.getElementById('startingLocation');
     quickLookupSelect.innerHTML = ''; // Clear previous options
+    startingLocationSelect.innerHTML = ''; // Clear previous options
 
     // Add default option
     const defaultOption = document.createElement('option');
@@ -2566,12 +2599,22 @@ function populateQuickLookup() {
     defaultOption.textContent = 'Select an option';
     quickLookupSelect.appendChild(defaultOption);
 
+    const defaultStartingOption = document.createElement('option');
+    defaultStartingOption.value = '';
+    defaultStartingOption.textContent = 'Select a starting location';
+    startingLocationSelect.appendChild(defaultStartingOption);
+
     // Populate with station locations
     Object.keys(data.station).forEach(station => {
         const option = document.createElement('option');
         option.value = `station|${station}`;
         option.textContent = station; // Use station name as the display text
         quickLookupSelect.appendChild(option);
+
+        const startingOption = document.createElement('option');
+        startingOption.value = station;
+        startingOption.textContent = station;
+        startingLocationSelect.appendChild(startingOption);
     });
 
     // Populate with planet and moon locations
@@ -2581,6 +2624,11 @@ function populateQuickLookup() {
             option.value = `planet|${planet}|${dropOffPoint}`;
             option.textContent = dropOffPoint; // Use drop-off point as the display text
             quickLookupSelect.appendChild(option);
+
+            const startingOption = document.createElement('option');
+            startingOption.value = dropOffPoint;
+            startingOption.textContent = dropOffPoint;
+            startingLocationSelect.appendChild(startingOption);
         });
     });
 
@@ -2591,6 +2639,11 @@ function populateQuickLookup() {
                 option.value = `moon|${planet}|${moon}|${dropOffPoint}`;
                 option.textContent = dropOffPoint; // Use drop-off point as the display text
                 quickLookupSelect.appendChild(option);
+
+                const startingOption = document.createElement('option');
+                startingOption.value = dropOffPoint;
+                startingOption.textContent = dropOffPoint;
+                startingLocationSelect.appendChild(startingOption);
             });
         });
     });
@@ -2647,9 +2700,16 @@ function handleQuickLookupSelection() {
 
         if (type === 'station') {
             locationTypeSelect.value = 'station';
-            locationSelect.value = planet;
+            locationSelect.innerHTML = ''; // Clear existing options
+            Object.keys(data.station).forEach(station => {
+                const option = document.createElement('option');
+                option.value = station;
+                option.textContent = station;
+                locationSelect.appendChild(option);
+            });
+            locationSelect.value = planet === 'Everus Harbor' ? 'Everus Harbor' : planet; // Set location to the selected station
             moonSelect.value = '';
-            dropOffPointSelect.value = moonOrDropOffPoint;
+            dropOffPointSelect.value = dropOffPoint;
         } else {
             locationTypeSelect.value = 'planet';
             locationSelect.value = planet;
