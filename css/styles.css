@@ -108,7 +108,7 @@ h1, h2 {
   border-radius: 12px;
   box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.1);
   z-index: 10;
-  padding: 10px 10px;
+  padding: 10px;
   margin-left: -10px;
   margin-right: 10px;
   -webkit-app-region: no-drag;
@@ -129,10 +129,24 @@ h1, h2 {
 
 .form-group {
   display: flex;
-  flex-direction: column;
-  margin-right: 10px; /* Adjust this value to control spacing */
-  min-width: auto;
-  transition: all 0.3s ease;
+  flex-direction: column; /* Stack label, input, and dropdown vertically */
+  margin-bottom: 15px; /* Space between form groups */
+}
+
+.form-group input[type="text"] {
+  margin-top: 5px; /* Space between the label and the input */
+  padding: 8px; /* Add padding for better appearance */
+  border: 1px solid var(--border-color); /* Border style */
+  border-radius: 4px; /* Rounded corners */
+  width: 100%; /* Make input full width */
+}
+
+.form-group select {
+  margin-top: 5px; /* Space between the input and the dropdown */
+  padding: 8px; /* Add padding for better appearance */
+  border: 1px solid var(--border-color); /* Border style */
+  border-radius: 4px; /* Rounded corners */
+  width: 100%; /* Make select full width */
 }
 
 .form-group:nth-child(1) {
@@ -280,7 +294,7 @@ td:nth-child(1) {
 
 th:nth-child(2),
 td:nth-child(2) {
-  width: 10%; /* Commodity */
+  width: 14%; /* Commodity */
 }
 
 th:nth-child(3),
@@ -290,7 +304,7 @@ td:nth-child(3) {
 
 th:nth-child(4),
 td:nth-child(4) {
-  width: 59%; /* Actions */
+  width: 40%; /* Reduced by 5% */
 }
 
 /* Add this to align the button to the left */
@@ -1313,17 +1327,16 @@ h1::after {
 
 /* Also update the action cell inputs */
 .action-cell input[type="number"] {
-  width: 90px;
-  padding: 4px;
+  width: 36px; /* Reduced from 90px by 60% */
+  padding: 4px; /* Reduce padding for a more compact appearance */
   margin-right: 5px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  height: 30px;
+  height: 30px; /* Reduce the height of the input box */
   background-color: var(--table-bg);
   color: var(--text-color);
-  -webkit-app-region: no-drag;
   transition: all 0.2s ease;
-  font-size: 12px;
+  font-size: 12px; /* Adjust font size if needed */
 }
 
 /* Add hover and focus effects for table inputs */
@@ -1338,11 +1351,16 @@ h1::after {
   outline: none;
 }
 
-/* Remove spinner buttons from number inputs in table */
-.action-cell input[type="number"]::-webkit-inner-spin-button,
-.action-cell input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+/* Remove spinner buttons from number inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none; /* Remove the default appearance */
+  margin: 0; /* Remove margin */
+}
+
+/* For Firefox */
+input[type="number"] {
+  -moz-appearance: textfield; /* Remove the default appearance in Firefox */
 }
 
 /* Ensure containers don't block interaction */
@@ -1547,8 +1565,8 @@ select:not(#locationType):not(#location):not(#moon) {
 
 /* Add this CSS rule to reduce the height of the table rows */
 #resultTable table tr {
-    height: 30px; /* Adjust the height as needed */
-    line-height: 30px; /* Align text vertically */
+    height: 25px; /* Reduced from 30px */
+    line-height: 25px; /* Align text vertically */
 }
 
 /* New CSS class for the Update Cargo text box */
@@ -1566,7 +1584,7 @@ select:not(#locationType):not(#location):not(#moon) {
 
 /* Update the action cell input styling to match button size */
 .action-cell input[type="number"] {
-  width: 90px; /* Adjust width as needed */
+  width: 36px; /* Reduced from 90px by 60% */
   padding: 4px; /* Reduce padding for a more compact appearance */
   margin-right: 5px;
   border: 1px solid var(--border-color);
@@ -1692,5 +1710,17 @@ button {
 
 button:hover {
   background-color: #45a049; /* Darker green on hover */
+}
+
+/* Adjust margins for the SCU label and input */
+.label-scu {
+  margin-left: 5px; /* Reduced from 10px */
+  font-size: 20px; /* Adjust font size if needed */
+}
+
+/* Adjust input field sizes */
+input[type="text"], input[type="number"] {
+  height: 30px; /* Reduced height */
+  font-size: 14px; /* Adjust font size */
 }
 

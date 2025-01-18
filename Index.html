@@ -40,9 +40,11 @@
         <!-- Add more options as needed -->
     </select>
 
-    <!-- Add Quick Lookup label and dropdown -->
+    <!-- Add Quick Lookup label -->
     <div class="form-group">
       <label for="quickLookup">Quick Lookup:</label>
+      <!-- Add the search box between the label and dropdown -->
+      <input type="text" id="quickLookupSearch" placeholder="Search..." />
       <select id="quickLookup">
         <option value="">Select an option</option>
         <!-- Options will be populated dynamically -->
@@ -95,8 +97,7 @@
           <button id="clearLogBtn">Clear Log</button>
           
           <!-- Add a label for SCU -->
-          <label for="totalCargo" style="margin-left: 10px; font-size: 25px; padding-bottom: 18px;">SCU:</label>
-          <!-- Reduce the size of the text box -->
+          <label for="totalCargo" class="label-scu">SCU:</label>
           <input type="text" id="totalCargo" placeholder="Total Cargo" readonly style="margin-left: 2.5px; width: 40px; font-size: 20px;">
       </div>
     </div>
